@@ -1,0 +1,27 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+    <!-- 배경 원 -->
+    <circle cx="256" cy="256" r="256" fill="#FF6B6B"/>
+
+    <!-- 쿠폰 본체 -->
+    <g transform="translate(256, 256)">
+        <!-- 메인 쿠폰 사각형 -->
+        <rect x="-160" y="-90" width="320" height="180" rx="25" fill="#FFFFFF"/>
+
+        <!-- 중앙 점선 (% 기호를 피해서) -->
+        <line x1="-130" y1="0" x2="-90" y2="0" stroke="#FF6B6B" stroke-width="20" stroke-dasharray="10,8"/>
+        <line x1="90" y1="0" x2="130" y2="0" stroke="#FF6B6B" stroke-width="20" stroke-dasharray="10,8"/>
+
+        <!-- % 기호 (더 크고 굵게) -->
+        <g transform="scale(1.5)">
+            <circle cx="-25" cy="-15" r="18" fill="none" stroke="#FF6B6B" stroke-width="16"/>
+            <circle cx="25" cy="15" r="18" fill="none" stroke="#FF6B6B" stroke-width="16"/>
+            <line x1="-40" y1="30" x2="40" y2="-30" stroke="#FF6B6B" stroke-width="16" stroke-linecap="round"/>
+        </g>
+
+        <!-- 왼쪽 원형 컷아웃 -->
+        <circle cx="-185" cy="0" r="35" fill="#FF6B6B"/>
+
+        <!-- 오른쪽 원형 컷아웃 -->
+        <circle cx="185" cy="0" r="35" fill="#FF6B6B"/>
+    </g>
+</svg>

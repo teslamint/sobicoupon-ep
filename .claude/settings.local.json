@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git reset:*)",
+      "Bash(wrangler deploy:*)",
+      "Bash(curl:*)",
+      "Bash(sed:*)",
+      "Bash(npm run lint)",
+      "Bash(echo \"Lint finished with code $?\")",
+      "Bash(node:*)"
+    ],
+    "deny": []
+  }
+}
