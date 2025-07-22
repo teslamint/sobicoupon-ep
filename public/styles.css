@@ -410,6 +410,10 @@ tr.nearby-match {
     border-left: 3px solid #667eea;
 }
 
+.map-container {
+    margin-bottom: 20px;
+}
+
 .main-content {
     display: flex;
     gap: 20px;
@@ -420,7 +424,8 @@ tr.nearby-match {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
-    margin: 15px 0;
+    margin: 0;
+    margin-bottom: 15px;
     padding: 10px;
     background: #f8f9fa;
     border-radius: 8px;
@@ -437,16 +442,33 @@ tr.nearby-match {
 }
 
 #map {
-    flex: 1;
-    height: 500px;
+    width: 100%;
+    height: 600px;
     border-radius: 15px;
     box-shadow: 0 5px 20px rgba(0,0,0,0.08);
     display: none;
     position: relative;
-    min-width: 300px;
 }
 
 @media screen and (min-width: 769px) {
+    .map-container {
+        margin-bottom: 20px;
+    }
+    
+    #map {
+        height: 600px;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    
+    .map-actions {
+        margin-top: -2px;
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+        border-bottom-left-radius: 15px;
+        border-bottom-right-radius: 15px;
+    }
+    
     .main-content {
         flex-direction: row;
     }
@@ -812,6 +834,10 @@ tr.nearby-match {
     }
     
     /* 지도와 검색 결과를 세로 배치 */
+    .map-container {
+        margin-bottom: 15px;
+    }
+    
     .main-content {
         display: block; /* flex 대신 block 사용 */
         margin-bottom: 15px;
