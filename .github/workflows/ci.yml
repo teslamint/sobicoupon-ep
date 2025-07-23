@@ -1,0 +1,360 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, v2 ]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # 코드 품질 검사
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check lint & code formatting
+        run: pnpm run check:all
+
+      - name: Type check
+        run: pnpm run type-check
+
+  # 유닛 테스트
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: quality
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run unit tests
+        run: pnpm run test:coverage
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          flags: unit
+          name: unit-tests
+          fail_ci_if_error: false
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+  # E2E 테스트
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: quality
+
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build project
+        run: pnpm run build
+        env:
+          CI: true
+          KAKAO_API_KEY: test-key-for-ci
+
+      - name: Install http-server
+        run: npm install -g http-server
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Start static server
+        run: |
+          cd dist/public
+          nohup http-server -p 8787 -c-1 --cors > server.log 2>&1 &
+          SERVER_PID=$!
+          echo "서버 PID: $SERVER_PID"
+          
+          # 서버가 완전히 시작될 때까지 기다리기
+          for i in {1..30}; do
+            if curl -f http://localhost:8787/ > /dev/null 2>&1; then
+              echo "서버가 성공적으로 시작되었습니다 (시도 $i/30)"
+              break
+            fi
+            echo "서버 시작 대기 중... (시도 $i/30)"
+            sleep 2
+          done
+          
+          # 최종 상태 확인
+          if ! curl -f http://localhost:8787/ > /dev/null 2>&1; then
+            echo "서버 시작 실패!"
+            cat server.log
+            exit 1
+          fi
+          
+          echo "서버 응답 테스트:"
+          curl -I http://localhost:8787/
+        env:
+          CI: true
+          KAKAO_API_KEY: test-key-for-ci
+
+      - name: Run E2E tests
+        run: npx playwright test --project=${{ matrix.browser }}
+        env:
+          CI: true
+          KAKAO_API_KEY: test-key-for-ci
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload test videos
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-videos-${{ matrix.browser }}
+          path: test-results/
+          retention-days: 7
+
+  # 모바일 E2E 테스트
+  mobile-e2e-tests:
+    name: Mobile E2E Tests
+    runs-on: ubuntu-latest
+    needs: quality
+
+    strategy:
+      matrix:
+        device: ['Mobile Chrome', 'Mobile Safari']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build project
+        run: pnpm run build
+        env:
+          CI: true
+          KAKAO_API_KEY: test-key-for-ci
+
+      - name: Install http-server
+        run: npm install -g http-server
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Start static server for mobile tests
+        run: |
+          cd dist/public
+          nohup http-server -p 8787 -c-1 --cors > server.log 2>&1 &
+          SERVER_PID=$!
+          echo "서버 PID: $SERVER_PID"
+          
+          # 서버가 완전히 시작될 때까지 기다리기
+          for i in {1..30}; do
+            if curl -f http://localhost:8787/ > /dev/null 2>&1; then
+              echo "서버가 성공적으로 시작되었습니다 (시도 $i/30)"
+              break
+            fi
+            echo "서버 시작 대기 중... (시도 $i/30)"
+            sleep 2
+          done
+          
+          # 최종 상태 확인
+          if ! curl -f http://localhost:8787/ > /dev/null 2>&1; then
+            echo "서버 시작 실패!"
+            cat server.log
+            exit 1
+          fi
+          
+          echo "서버 응답 테스트:"
+          curl -I http://localhost:8787/
+        env:
+          CI: true
+          KAKAO_API_KEY: test-key-for-ci
+
+      - name: Run Mobile E2E tests
+        run: npx playwright test --project="${{ matrix.device }}"
+        env:
+          CI: true
+          KAKAO_API_KEY: test-key-for-ci
+
+      - name: Upload mobile test results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: mobile-playwright-report-${{ matrix.device }}
+          path: playwright-report/
+          retention-days: 7
+
+  # 빌드 테스트
+  build:
+    name: Build Test
+    runs-on: ubuntu-latest
+    needs: [unit-tests, e2e-tests]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build project
+        run: pnpm run build
+        env:
+          CI: true
+          KAKAO_API_KEY: test-key-for-ci
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: dist/
+          retention-days: 7
+
+  # 보안 검사
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: quality
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run security audit
+        run: pnpm audit --audit-level=moderate
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  # 배포 준비 검증 (main 브랜치에서만)
+  deployment-ready:
+    name: Deployment Ready
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: [unit-tests, e2e-tests, mobile-e2e-tests, build, security]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: All checks passed
+        run: |
+          echo "✅ 모든 테스트와 검사가 성공적으로 완료되었습니다!"
+          echo "🚀 배포 준비가 완료되었습니다."
+
+      - name: Create deployment status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: context.payload.deployment?.id,
+              state: 'success',
+              description: 'All tests passed - ready for deployment'
+            });

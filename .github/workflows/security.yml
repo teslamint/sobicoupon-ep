@@ -1,0 +1,269 @@
+name: Security Scans
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # 매주 월요일 오전 3시에 실행
+    - cron: '0 3 * * 1'
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  dependency-scan:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run pnpm audit
+        run: |
+          pnpm audit --audit-level=moderate --json > audit-results.json || true
+          pnpm audit --audit-level=moderate
+
+      - name: Process audit results
+        run: |
+          node -e "
+          const fs = require('fs');
+          const audit = JSON.parse(fs.readFileSync('audit-results.json', 'utf8'));
+          
+          if (audit.vulnerabilities && Object.keys(audit.vulnerabilities).length > 0) {
+            console.log('🔍 발견된 보안 취약점:');
+            Object.entries(audit.vulnerabilities).forEach(([pkg, vuln]) => {
+              console.log(\`- \${pkg}: \${vuln.severity} (\${vuln.via.length} issues)\`);
+            });
+          } else {
+            console.log('✅ 보안 취약점이 발견되지 않았습니다.');
+          }
+          "
+
+      - name: Upload audit results
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit
+          path: audit-results.json
+          retention-days: 30
+
+  codeql-analysis:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+          queries: security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript"
+
+  secret-scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+  security-headers:
+    name: Security Headers Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Start server
+        run: |
+          pnpm run dev &
+          sleep 10
+        env:
+          CI: true
+
+      - name: Check security headers
+        run: |
+          echo "## 🔒 보안 헤더 검사 결과" > security-headers.md
+          echo "" >> security-headers.md
+          
+          # CSP 헤더 확인
+          if curl -s -I http://localhost:8787 | grep -i "content-security-policy"; then
+            echo "✅ Content-Security-Policy 헤더 존재" >> security-headers.md
+          else
+            echo "❌ Content-Security-Policy 헤더 누락" >> security-headers.md
+          fi
+          
+          # X-Frame-Options 확인
+          if curl -s -I http://localhost:8787 | grep -i "x-frame-options"; then
+            echo "✅ X-Frame-Options 헤더 존재" >> security-headers.md
+          else
+            echo "⚠️ X-Frame-Options 헤더 권장" >> security-headers.md
+          fi
+          
+          # X-Content-Type-Options 확인
+          if curl -s -I http://localhost:8787 | grep -i "x-content-type-options"; then
+            echo "✅ X-Content-Type-Options 헤더 존재" >> security-headers.md
+          else
+            echo "⚠️ X-Content-Type-Options 헤더 권장" >> security-headers.md
+          fi
+          
+          echo "" >> security-headers.md
+          echo "### 전체 응답 헤더" >> security-headers.md
+          echo "\`\`\`" >> security-headers.md
+          curl -s -I http://localhost:8787 >> security-headers.md
+          echo "\`\`\`" >> security-headers.md
+
+      - name: Comment security headers
+        if: github.event_name == 'pull_request' && context.payload.pull_request
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('security-headers.md')) {
+              const report = fs.readFileSync('security-headers.md', 'utf8');
+              console.log('Security headers analysis results:');
+              console.log(report);
+              
+              // PR 댓글 작성 시도 (실패해도 워크플로는 계속 진행)
+              try {
+                if (context.payload.pull_request && context.payload.pull_request.number) {
+                  await github.rest.issues.createComment({
+                    issue_number: context.payload.pull_request.number,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    body: report
+                  });
+                  console.log('Security headers 댓글 작성 성공');
+                } else {
+                  console.log('PR 컨텍스트가 없어 댓글 작성을 건너뜁니다.');
+                }
+              } catch (commentError) {
+                console.log('Security headers 댓글 작성 실패 (권한 문제일 수 있음):', commentError.message);
+                // 댓글 작성 실패는 무시하고 계속 진행
+              }
+            }
+
+  license-compliance:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install license checker
+        run: pnpm add -g license-checker
+
+      - name: Check licenses
+        run: |
+          echo "## 📄 라이선스 호환성 검사" > license-report.md
+          echo "" >> license-report.md
+          
+          license-checker --json > licenses.json
+          
+          # 허용되지 않는 라이선스 확인
+          FORBIDDEN_LICENSES="GPL-2.0,GPL-3.0,AGPL-1.0,AGPL-3.0"
+          
+          node -e "
+          const fs = require('fs');
+          const licenses = JSON.parse(fs.readFileSync('licenses.json', 'utf8'));
+          const forbidden = '$FORBIDDEN_LICENSES'.split(',');
+          
+          let hasIssues = false;
+          console.log('### 라이선스 분석 결과');
+          
+          Object.entries(licenses).forEach(([pkg, info]) => {
+            if (forbidden.some(f => info.licenses && info.licenses.includes(f))) {
+              console.log(\`❌ \${pkg}: \${info.licenses} (허용되지 않음)\`);
+              hasIssues = true;
+            }
+          });
+          
+          if (!hasIssues) {
+            console.log('✅ 모든 의존성이 호환 가능한 라이선스를 사용합니다.');
+          }
+          " >> license-report.md
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-report
+          path: |
+            license-report.md
+            licenses.json
+          retention-days: 30

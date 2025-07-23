@@ -1,13 +1,43 @@
 {
 	"name": "sobicoupon",
-	"version": "0.0.0",
+	"version": "2.0.0",
+	"description": "은평구 소비쿠폰 가맹점 위치 검색 시스템",
 	"private": true,
 	"scripts": {
-		"deploy": "wrangler deploy",
+		"deploy": "npm run build && wrangler deploy",
 		"dev": "wrangler dev",
-		"start": "wrangler dev"
+		"start": "wrangler dev",
+		"build": "node build.js",
+		"build:watch": "node build.js --watch",
+		"type-check": "tsc --noEmit",
+		"lint": "eslint public/**/*.js --fix",
+		"format": "prettier --write \"public/**/*.{js,css,html}\"",
+		"lint:check": "eslint public/**/*.js",
+		"format:check": "prettier --check \"public/**/*.{js,css,html}\"",
+		"lint:format": "eslint public/**/*.js --fix && prettier --write \"public/**/*.{js,css,html}\"",
+		"check:all": "pnpm run lint:check && pnpm run format:check",
+		"test": "jest",
+		"test:watch": "jest --watch",
+		"test:coverage": "jest --coverage",
+		"test:e2e": "playwright test",
+		"test:e2e:headed": "playwright test --headed",
+		"test:e2e:ui": "playwright test --ui"
 	},
 	"devDependencies": {
-		"wrangler": "^4.25.0"
+		"@babel/core": "^7.28.0",
+		"@babel/plugin-transform-modules-commonjs": "^7.27.1",
+		"@babel/preset-env": "^7.28.0",
+		"@playwright/test": "^1.54.2",
+		"@types/node": "^20.19.9",
+		"babel-jest": "^29.7.0",
+		"esbuild": "^0.25.0",
+		"eslint": "^8.57.1",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-prettier": "^5.5.3",
+		"jest": "^29.7.0",
+		"jest-environment-jsdom": "^29.7.0",
+		"prettier": "^3.6.2",
+		"typescript": "^5.9.2",
+		"wrangler": "^4.27.0"
 	}
 }
