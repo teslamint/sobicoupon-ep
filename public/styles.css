@@ -800,6 +800,10 @@ tr.nearby-match {
     box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     min-width: 20px;
     text-align: center;
+    pointer-events: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 /* 모바일 스타일 */
@@ -1082,6 +1086,42 @@ tr.nearby-match {
         height: 50px;
         font-size: 24px;
         border-radius: 8px;
+    }
+    
+    /* 마커 터치 범위 확대 */
+    #map {
+        -webkit-tap-highlight-color: transparent;
+        tap-highlight-color: transparent;
+        touch-action: pan-x pan-y;
+    }
+    
+    /* 마커 터치 영역 확대 */
+    #map > div > div > div > div {
+        cursor: pointer !important;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* 파이어폭스 터치 시뮬레이션 마커 영역 - 대체 방식 사용 */
+    /* Firefox에서 마커 클릭 영역 확대 */
+    #map img[src*="marker"],
+    #map img[src*="pin"] {
+        pointer-events: none !important;
+    }
+    
+    #map > div > div > div > div {
+        pointer-events: auto !important;
+        position: relative;
+        z-index: 100 !important;
+    }
+    
+    #map > div > div > div > div:after {
+        content: '';
+        position: absolute;
+        top: -20px;
+        left: -20px;
+        right: -20px;
+        bottom: -20px;
+        pointer-events: auto;
     }
     
     /* 테이블 로우 터치 영역 */
