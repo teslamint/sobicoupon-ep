@@ -1101,28 +1101,27 @@ tr.nearby-match {
         -webkit-tap-highlight-color: transparent;
     }
     
-    /* 파이어폭스 터치 시뮬레이션 마커 영역 */
-    @-moz-document url-prefix() {
-        #map img[src*="marker"],
-        #map img[src*="pin"] {
-            pointer-events: none !important;
-        }
-        
-        #map > div > div > div > div {
-            pointer-events: auto !important;
-            position: relative;
-            z-index: 100 !important;
-        }
-        
-        #map > div > div > div > div:after {
-            content: '';
-            position: absolute;
-            top: -20px;
-            left: -20px;
-            right: -20px;
-            bottom: -20px;
-            pointer-events: auto;
-        }
+    /* 파이어폭스 터치 시뮬레이션 마커 영역 - 대체 방식 사용 */
+    /* Firefox에서 마커 클릭 영역 확대 */
+    #map img[src*="marker"],
+    #map img[src*="pin"] {
+        pointer-events: none !important;
+    }
+    
+    #map > div > div > div > div {
+        pointer-events: auto !important;
+        position: relative;
+        z-index: 100 !important;
+    }
+    
+    #map > div > div > div > div:after {
+        content: '';
+        position: absolute;
+        top: -20px;
+        left: -20px;
+        right: -20px;
+        bottom: -20px;
+        pointer-events: auto;
     }
     
     /* 테이블 로우 터치 영역 */

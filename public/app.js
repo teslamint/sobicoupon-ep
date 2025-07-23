@@ -18,6 +18,39 @@ let highlightMarkerImage = null; // 강조 마커 이미지
 let clusterer = null; // 마커 클러스터러
 let db = null; // IndexedDB 인스턴스
 
+// 터치 이벤트 지원 감지 및 처리 유틸리티
+function setupMarkerTouchSupport(marker, clickHandler) {
+    // 터치 이벤트 지원 여부를 기능으로 감지
+    const hasTouchSupport = ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    
+    if (!hasTouchSupport) {
+        return; // 터치 지원이 없으면 종료
+    }
+    
+    // 터치 이벤트가 제대로 작동하는지 확인
+    const hasProperTouchSupport = (function() {
+        try {
+            return 'TouchEvent' in window && 'ontouchstart' in document.documentElement;
+        } catch (e) {
+            return false;
+        }
+    })();
+    
+    if (hasProperTouchSupport) {
+        // 터치 이벤트가 제대로 지원되는 경우 touchend 사용
+        kakao.maps.event.addListener(marker, 'touchend', function(e) {
+            kakao.maps.event.trigger(this, 'click', e);
+        });
+    } else {
+        // 터치 이벤트가 제대로 지원되지 않는 경우 (예: Firefox) mousedown 사용
+        kakao.maps.event.addListener(marker, 'mousedown', function(e) {
+            if (clickHandler) {
+                clickHandler.call(this, e);
+            }
+        });
+    }
+}
+
 // IndexedDB 초기화
 function initIndexedDB() {
     return new Promise((resolve, reject) => {
@@ -790,47 +823,33 @@ function displayMapSearchResults(matchedStores, centerLocation) {
 
         newMarkers.push(marker);
         
-        // 터치 지원을 위한 추가 이벤트
-        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-            // 파이어폭스 터치 시뮬레이션을 위한 특별 처리
-            const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-            if (isFirefox) {
-                // 파이어폭스에서는 mousedown 이벤트를 사용
-                kakao.maps.event.addListener(marker, 'mousedown', (function(markerItems, markerCoords, markerRef) {
-                    return function(e) {
-                        console.log('Marker mousedown (Firefox):', markerItems.length);
-                        // 인포 윈도우 또는 그룹 팝업 직접 호출
-                        if (currentGroupOverlay) {
-                            currentGroupOverlay.setMap(null);
-                            currentGroupOverlay = null;
-                        }
+        // 터치 지원을 위한 추가 이벤트 (Firefox 호환성 포함)
+        setupMarkerTouchSupport(marker, (function(markerItems, markerCoords, markerRef) {
+            return function(e) {
+                // 인포 윈도우 또는 그룹 팝업 직접 호출
+                if (currentGroupOverlay) {
+                    currentGroupOverlay.setMap(null);
+                    currentGroupOverlay = null;
+                }
 
-                        if (markerItems.length > 1) {
-                            showGroupedStoresPopup(markerItems, markerCoords, markerRef);
-                        } else {
-                            const item = markerItems[0];
-                            const content = `
-                                <div style="padding:10px;min-width:250px;">
-                                    <strong style="font-size:16px;">${item.store.상호}</strong><br>
-                                    <span style="color:#666;">행정동: ${item.store.행정동}</span><br>
-                                    ${item.store.category ? `<span style="color:#667eea;">카테고리: ${item.store.category.split(' > ')[0]}</span><br>` : ''}
-                                    <span style="color:#666;">주소: ${item.place.road_address_name || item.place.address_name}</span><br>
-                                    <span style="color:#667eea;font-weight:600;">거리: ${item.distance}m</span><br>
-                                    ${item.place.phone ? `<span style="color:#999;font-size:12px;">전화: ${item.place.phone}</span>` : ''}
-                                </div>
-                            `;
-                            showInfoWindow(content, markerCoords, markerRef);
-                        }
-                    };
-                })(items, coords, marker));
-            } else {
-                kakao.maps.event.addListener(marker, 'touchend', function(e) {
-                    console.log('Marker touchend:', items.length);
-                    // 터치 종료 시 클릭 이벤트 트리거
-                    kakao.maps.event.trigger(this, 'click', e);
-                });
-            }
-        }
+                if (markerItems.length > 1) {
+                    showGroupedStoresPopup(markerItems, markerCoords, markerRef);
+                } else {
+                    const item = markerItems[0];
+                    const content = `
+                        <div style="padding:10px;min-width:250px;">
+                            <strong style="font-size:16px;">${item.store.상호}</strong><br>
+                            <span style="color:#666;">행정동: ${item.store.행정동}</span><br>
+                            ${item.store.category ? `<span style="color:#667eea;">카테고리: ${item.store.category.split(' > ')[0]}</span><br>` : ''}
+                            <span style="color:#666;">주소: ${item.place.road_address_name || item.place.address_name}</span><br>
+                            <span style="color:#667eea;font-weight:600;">거리: ${item.distance}m</span><br>
+                            ${item.place.phone ? `<span style="color:#999;font-size:12px;">전화: ${item.place.phone}</span>` : ''}
+                        </div>
+                    `;
+                    showInfoWindow(content, markerCoords, markerRef);
+                }
+            };
+        })(items, coords, marker));
     });
 
     // 기존 마커 제거 후 새로운 마커들 추가
@@ -1729,54 +1748,40 @@ function showAllMarkers(preserveView = false) {
 
         markersToCluster.push(marker);
         
-        // 터치 지원을 위한 추가 이벤트
-        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-            // 파이어폭스 터치 시뮬레이션을 위한 특별 처리
-            const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-            if (isFirefox) {
-                // 파이어폭스에서는 mousedown 이벤트를 사용
-                kakao.maps.event.addListener(marker, 'mousedown', (function(markerRef) {
-                    return function(e) {
-                        console.log('Marker mousedown (Firefox, all stores):', markerRef.stores.length);
-                        // 인포 윈도우 또는 그룹 팝업 직접 호출
-                        if (currentGroupOverlay) {
-                            currentGroupOverlay.setMap(null);
-                            currentGroupOverlay = null;
-                        }
+        // 터치 지원을 위한 추가 이벤트 (Firefox 호환성 포함)
+        setupMarkerTouchSupport(marker, (function(markerRef) {
+            return function(e) {
+                // 인포 윈도우 또는 그룹 팝업 직접 호출
+                if (currentGroupOverlay) {
+                    currentGroupOverlay.setMap(null);
+                    currentGroupOverlay = null;
+                }
 
-                        // 인포윈도우 닫기
-                        if (infowindow) {
-                            infowindow.close();
-                        }
+                // 인포윈도우 닫기
+                if (infowindow) {
+                    infowindow.close();
+                }
 
-                        if (markerRef.stores.length > 1) {
-                            const items = markerRef.stores.map(store => ({ store: store }));
-                            const firstStore = markerRef.stores[0];
-                            const lat = typeof firstStore.coords.getLat === 'function' ? firstStore.coords.getLat() : firstStore.coords.lat;
-                            const lng = typeof firstStore.coords.getLng === 'function' ? firstStore.coords.getLng() : firstStore.coords.lng;
-                            showGroupedStoresPopup(items, new kakao.maps.LatLng(lat, lng), markerRef);
-                        } else {
-                            const store = markerRef.stores[0];
-                            const content = `
-                                <div style="padding:10px;min-width:250px;">
-                                    <strong style="font-size:16px;">${store.상호}</strong><br>
-                                    <span style="color:#666;">행정동: ${store.행정동}</span><br>
-                                    ${store.category ? `<span style="color:#667eea;">카테고리: ${store.category.split(' > ')[0]}</span><br>` : ''}
-                                    <span style="color:#666;">주소: ${store.foundAddress || store.상세주소 || '주소 정보 없음'}</span>
-                                </div>
-                            `;
-                            showInfoWindow(content, store.coords, markerRef);
-                        }
-                    };
-                })(marker));
-            } else {
-                kakao.maps.event.addListener(marker, 'touchend', function(e) {
-                    console.log('Marker touchend (all stores):', this.stores.length);
-                    // 터치 종료 시 클릭 이벤트 트리거
-                    kakao.maps.event.trigger(this, 'click', e);
-                });
-            }
-        }
+                if (markerRef.stores.length > 1) {
+                    const items = markerRef.stores.map(store => ({ store: store }));
+                    const firstStore = markerRef.stores[0];
+                    const lat = typeof firstStore.coords.getLat === 'function' ? firstStore.coords.getLat() : firstStore.coords.lat;
+                    const lng = typeof firstStore.coords.getLng === 'function' ? firstStore.coords.getLng() : firstStore.coords.lng;
+                    showGroupedStoresPopup(items, new kakao.maps.LatLng(lat, lng), markerRef);
+                } else {
+                    const store = markerRef.stores[0];
+                    const content = `
+                        <div style="padding:10px;min-width:250px;">
+                            <strong style="font-size:16px;">${store.상호}</strong><br>
+                            <span style="color:#666;">행정동: ${store.행정동}</span><br>
+                            ${store.category ? `<span style="color:#667eea;">카테고리: ${store.category.split(' > ')[0]}</span><br>` : ''}
+                            <span style="color:#666;">주소: ${store.foundAddress || store.상세주소 || '주소 정보 없음'}</span>
+                        </div>
+                    `;
+                    showInfoWindow(content, store.coords, markerRef);
+                }
+            };
+        })(marker));
     });
 
     // 클러스터러에 마커 추가
