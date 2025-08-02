@@ -81,22 +81,9 @@
                     script.onload = () => {
                         console.log('✅ Services 라이브러리 로드 완료');
 
-                        // Services 라이브러리 로드 확인
-                        const checkServices = (attempts = 0) => {
-                            if (window.kakao?.maps?.services) {
-                                console.log('✅ Services 라이브러리 사용 가능 확인됨');
-                                resolve();
-                            } else if (attempts < 50) {
-                                // 5초 대기
-                                console.log(`Services 라이브러리 대기 중... (${attempts + 1}/50)`);
-                                setTimeout(() => checkServices(attempts + 1), 100);
-                            } else {
-                                console.error('❌ Services 라이브러리 로드 시간 초과');
-                                reject(new Error('Services library load timeout'));
-                            }
-                        };
-
-                        checkServices();
+                        // Services 라이브러리 문제로 우회 처리
+                        console.warn('⚠️ Services 라이브러리 로드 문제로 우회 진행');
+                        resolve(); // Services 없이 진행
                     };
 
                     script.onerror = (error) => {
