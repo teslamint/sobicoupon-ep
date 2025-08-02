@@ -146,7 +146,16 @@ export class MapManager {
             };
 
             this.map = new kakao.maps.Map(container, options);
-            this.ps = new kakao.maps.services.Places();
+
+            // Services 라이브러리 우회 처리
+            if (window.kakao?.maps?.services?.Places) {
+                this.ps = new kakao.maps.services.Places();
+                console.log('✅ Places 서비스 초기화 완료');
+            } else {
+                console.warn('⚠️ Places 서비스 없이 지도 초기화 (위치 검색 기능 제한됨)');
+                this.ps = null;
+            }
+
             this.infowindow = new kakao.maps.InfoWindow({ zIndex: 10 });
 
             // 클러스터러 초기화
@@ -379,8 +388,10 @@ export class MapManager {
     // 역지오코딩 수행
     reverseGeocode(lat, lng) {
         return new Promise((resolve, reject) => {
-            if (!window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
-                reject(new Error('카카오맵 서비스가 로드되지 않았습니다.'));
+            // Services 라이브러리가 없으면 기본 주소 반환
+            if (!window.kakao?.maps?.services?.Geocoder) {
+                console.warn('⚠️ Geocoder 서비스를 사용할 수 없습니다. 기본 주소를 사용합니다.');
+                resolve('주소 정보 없음 (Geocoder 서비스 제한)');
                 return;
             }
 
@@ -1342,6 +1353,18 @@ export class MapManager {
     // 주소 검색
     searchAddress(keyword) {
         return new Promise((resolve, reject) => {
+            // Places 서비스가 없으면 오류 반환
+            if (!this.ps) {
+                reject(
+                    new AppError(
+                        'Places 서비스가 사용할 수 없습니다. 위치 검색 기능이 제한됩니다.',
+                        ErrorCodes.MAP_SEARCH_ERROR,
+                        { reason: 'places_service_unavailable' }
+                    )
+                );
+                return;
+            }
+
             this.ps.keywordSearch(
                 keyword,
                 (data, status) => {
