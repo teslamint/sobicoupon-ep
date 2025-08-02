@@ -89,9 +89,9 @@ jobs:
                 ${files.some(f => f.filename.includes('.md')) ? '📝 문서 변경 포함' : ''}
                 `;
 
-                if (context.payload.pull_request && context.payload.pull_request.number) {
+                if (github.event.pull_request && github.event.pull_request.number) {
                   await github.rest.issues.createComment({
-                    issue_number: context.payload.pull_request.number,
+                    issue_number: github.event.pull_request.number,
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     body: comment
@@ -294,16 +294,15 @@ jobs:
                                result.result === 'failure' ? '❌' :
                                result.result === 'skipped' ? '⏭️' : '🟡';
                   return `- ${emoji} **${job}**: ${result.result}`;
-                }).join('
-')}
+                }).join('\n')}
 
                 ${failed.length > 0 ? '⚠️ **실패한 검사를 수정한 후 다시 커밋해 주세요.**' : ''}
                 ${status === '✅ 모든 검사 통과' ? '🎉 **이 PR은 병합 준비가 완료되었습니다!**' : ''}
                 `;
 
-                if (context.payload.pull_request && context.payload.pull_request.number) {
+                if (github.event.pull_request && github.event.pull_request.number) {
                   await github.rest.issues.createComment({
-                    issue_number: context.payload.pull_request.number,
+                    issue_number: github.event.pull_request.number,
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     body: comment
