@@ -36,21 +36,27 @@ export default {
 
             // 디버깅: 플레이스홀더 확인
             const hasPlaceholder = html.includes('[KAKAO_API_KEY]');
+            const hasYourApiKey = html.includes('YOUR_KAKAO_API_KEY_HERE');
             console.log('HTML replacement debug:', {
                 hasPlaceholder,
+                hasYourApiKey,
                 htmlLength: html.length,
                 kakaoApiKey: `${kakaoApiKey.substring(0, 8)}...`
             });
 
-            const modifiedHtml = html.replace(/\[KAKAO_API_KEY\]/g, kakaoApiKey).replace(
-                '</head>',
-                `
+            // 모든 플레이스홀더를 실제 API 키로 치환
+            const modifiedHtml = html
+                .replace(/\[KAKAO_API_KEY\]/g, kakaoApiKey)
+                .replace(/YOUR_KAKAO_API_KEY_HERE/g, kakaoApiKey)
+                .replace(
+                    '</head>',
+                    `
           <script>
             // API 키를 전역 변수로 설정
             window.KAKAO_API_KEY = '${kakaoApiKey}';
           </script>
         </head>`
-            );
+                );
 
             // 보안 헤더 강화
             const securityHeaders = {
