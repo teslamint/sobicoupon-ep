@@ -44,7 +44,7 @@
             // 동적으로 스크립트 태그 생성 (개선된 로딩)
             const script = document.createElement('script');
             script.type = 'text/javascript';
-            script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services,clusterer`;
+            script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services&libraries=clusterer`;
 
             // 로딩 완료 처리
             script.onload = function () {
