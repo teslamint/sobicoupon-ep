@@ -13,10 +13,31 @@
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="stylesheet" href="styles.css" />
-        <script
-            type="text/javascript"
-            src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=[KAKAO_API_KEY]&libraries=services,clusterer"
-        ></script>
+        <script>
+            // 환경별 API 키 설정
+            const hostname = window.location.hostname;
+            let apiKey;
+            
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                // 개발 환경
+                apiKey = 'test-key-for-ci';
+            } else if (hostname.includes('tmint.dev')) {
+                // 실제 운영 환경 - 실제 키 사용
+                apiKey = '3f3d4ffe46c89bf004be8e8bf3a20ab8';
+            } else {
+                // 기타 환경
+                apiKey = 'test-key-for-ci';
+            }
+            
+            // 전역 변수로 설정
+            window.KAKAO_API_KEY = apiKey;
+            
+            // 동적으로 스크립트 태그 생성
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services,clusterer`;
+            document.head.appendChild(script);
+        </script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     </head>
     <body>

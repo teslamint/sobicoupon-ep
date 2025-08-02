@@ -31,12 +31,18 @@ class App {
             // 전역 에러 핸들러 설정
             this.setupGlobalErrorHandler();
 
-            // 마이그레이션 먼저 실행 (SDK 로드 전에)
-            await storageManager.init();
-            await this.waitForMigrationComplete();
+            // 마이그레이션을 SDK와 독립적으로 실행
+            this.initMigrationIndependently();
 
-            // 카카오맵 SDK가 로드될 때까지 대기
-            await this.waitForKakaoSDK();
+            // 카카오맵 SDK가 로드될 때까지 대기 (타임아웃 시 우회)
+            try {
+                await this.waitForKakaoSDK();
+            } catch (sdkError) {
+                console.warn('카카오맵 SDK 로드 실패, 마이그레이션만 진행:', sdkError.message);
+                // SDK 로드 실패해도 마이그레이션은 계속 진행
+                await this.waitForMigrationComplete();
+                throw sdkError; // 원래 에러는 다시 던져서 UI에서 처리
+            }
 
             uiManager.init();
 
@@ -77,6 +83,19 @@ class App {
 
             checkKakao();
         });
+    }
+
+    // 마이그레이션을 SDK와 독립적으로 실행
+    initMigrationIndependently() {
+        // 즉시 백그라운드에서 마이그레이션 시작
+        storageManager
+            .init()
+            .then(() => {
+                console.log('마이그레이션이 백그라운드에서 완료되었습니다.');
+            })
+            .catch((error) => {
+                console.error('마이그레이션 실패:', error);
+            });
     }
 
     // 마이그레이션 완료 대기
