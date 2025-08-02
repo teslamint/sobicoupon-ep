@@ -17,6 +17,12 @@ importers:
       '@babel/preset-env':
         specifier: ^7.28.0
         version: 7.28.0(@babel/core@7.28.0)
+      '@eslint/eslintrc':
+        specifier: ^3.3.1
+        version: 3.3.1
+      '@eslint/js':
+        specifier: ^9.32.0
+        version: 9.32.0
       '@playwright/test':
         specifier: ^1.54.2
         version: 1.54.2
@@ -41,6 +47,9 @@ importers:
       fake-indexeddb:
         specifier: ^6.0.1
         version: 6.0.1
+      globals:
+        specifier: ^16.3.0
+        version: 16.3.0
       jest:
         specifier: ^30.0.5
         version: 30.0.5(@types/node@24.1.0)
@@ -1979,6 +1988,10 @@ packages:
 
   globals@14.0.0:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
+    engines: {node: '>=18'}
+
+  globals@16.3.0:
+    resolution: {integrity: sha512-bqWEnJ1Nt3neqx2q5SFfGS8r/ahumIakg3HcwtNlrVlwXIeNumWn/c7Pn/wKzGhf6SaW6H6uWXLqC30STCMchQ==}
     engines: {node: '>=18'}
 
   graceful-fs@4.2.11:
@@ -4899,6 +4912,8 @@ snapshots:
       path-is-absolute: 1.0.1
 
   globals@14.0.0: {}
+
+  globals@16.3.0: {}
 
   graceful-fs@4.2.11: {}
 
