@@ -746,7 +746,7 @@ export class MapManager {
             try {
                 kakao.maps.event.removeListener(marker, 'click');
                 kakao.maps.event.removeListener(marker, 'mousedown');
-            } catch (e) {
+            } catch {
                 // 이미 제거된 경우 무시
             }
         } catch (error) {

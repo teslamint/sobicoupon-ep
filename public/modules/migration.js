@@ -52,7 +52,7 @@ export class CacheMigration {
     }
 
     // 마이그레이션 완료 여부 확인
-    async isMigrationCompleted() {
+    isMigrationCompleted() {
         try {
             const migrationInfo = localStorage.getItem('cache_migration_info');
             if (!migrationInfo) {
@@ -67,7 +67,7 @@ export class CacheMigration {
     }
 
     // 마이그레이션 완료 표시
-    async markMigrationCompleted() {
+    markMigrationCompleted() {
         try {
             const migrationInfo = {
                 version: this.migrationVersion,
@@ -136,7 +136,7 @@ export class CacheMigration {
     }
 
     // 특정 버전에서 데이터 읽기
-    async readOldDataFromVersion(version) {
+    readOldDataFromVersion(version) {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.oldDBName, version);
 

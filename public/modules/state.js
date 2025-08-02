@@ -185,7 +185,7 @@ export class StateManager {
             callbacks.forEach((callback) => {
                 try {
                     callback(this.state[key], key);
-                } catch (error) {
+                } catch {
                     // 옵저버 에러는 무시하고 계속 진행
                 }
             });
@@ -198,7 +198,7 @@ export class StateManager {
             callbacks.forEach((callback) => {
                 try {
                     callback(this.state[key], key);
-                } catch (error) {
+                } catch {
                     // 옵저버 에러는 무시하고 계속 진행
                 }
             });
@@ -329,8 +329,8 @@ export class StateManager {
             delete serializable.currentLocationMarker;
 
             return JSON.stringify(serializable);
-        } catch (error) {
-            Utils.warn('상태 직렬화 중 오류:', error);
+        } catch {
+            Utils.warn('상태 직렬화 중 오류');
             return JSON.stringify({});
         }
     }
@@ -363,7 +363,7 @@ export class StateManager {
 
             this.setState(parsed, false);
             return true;
-        } catch (error) {
+        } catch {
             // 역직렬화 실패는 무시
             return false;
         }

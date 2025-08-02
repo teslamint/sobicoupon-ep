@@ -183,7 +183,7 @@ export class Utils {
     static safeJSONParse(str, defaultValue = null) {
         try {
             return JSON.parse(str);
-        } catch (e) {
+        } catch {
             // JSON 파싱 에러는 무시하고 기본값 반환
             return defaultValue;
         }

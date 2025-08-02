@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+# husky
+
+echo "🧪 Running pre-push checks..."
+
+# 모든 테스트 실행
+echo "🔬 Running unit tests..."
+pnpm run test
+
+# 빌드 테스트
+echo "🏗️ Testing build process..."
+pnpm run build
+
+# E2E 테스트 (CI 환경에서만, 로컬에서는 스킵)
+if [ "$CI" = "true" ]; then
+    echo "🎭 Running E2E tests..."
+    pnpm run test:e2e
+else
+    echo "⏭️ Skipping E2E tests (not in CI environment)"
+fi
+
+echo "✅ Pre-push checks completed successfully!"

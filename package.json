@@ -21,7 +21,17 @@
 		"test:coverage": "jest --coverage",
 		"test:e2e": "playwright test",
 		"test:e2e:headed": "playwright test --headed",
-		"test:e2e:ui": "playwright test --ui"
+		"test:e2e:ui": "playwright test --ui",
+		"prepare": "husky"
+	},
+	"lint-staged": {
+		"public/**/*.js": [
+			"eslint --fix",
+			"prettier --write"
+		],
+		"public/**/*.{css,html}": [
+			"prettier --write"
+		]
 	},
 	"devDependencies": {
 		"@babel/core": "^7.28.0",
@@ -38,8 +48,10 @@
 		"eslint-plugin-prettier": "^5.5.3",
 		"fake-indexeddb": "^6.0.1",
 		"globals": "^16.3.0",
+		"husky": "^9.1.7",
 		"jest": "^30.0.5",
 		"jest-environment-jsdom": "^30.0.5",
+		"lint-staged": "^16.1.2",
 		"prettier": "^3.6.2",
 		"typescript": "^5.9.2",
 		"wrangler": "^4.27.0"

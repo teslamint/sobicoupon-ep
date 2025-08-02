@@ -146,7 +146,7 @@ export class FileHandler {
                                 }
                             }
                         }
-                    } catch (error) {
+                    } catch {
                         invalidCount++;
                     }
                 });
@@ -367,7 +367,7 @@ export class FileHandler {
                     store.searched = true;
                 }
             });
-        } catch (error) {
+        } catch {
             // 캐시 로드 실패는 무시
         }
     }
@@ -392,7 +392,7 @@ export class FileHandler {
         // 캐시에 저장
         try {
             await storageManager.saveCategories(categories);
-        } catch (error) {
+        } catch {
             // 카테고리 저장 실패는 무시
         }
     }

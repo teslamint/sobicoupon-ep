@@ -33,7 +33,8 @@ export default defineConfig([
             'no-unused-vars': [
                 'warn',
                 {
-                    argsIgnorePattern: '^_'
+                    argsIgnorePattern: '^_',
+                    varsIgnorePattern: '^_'
                 }
             ],
 
