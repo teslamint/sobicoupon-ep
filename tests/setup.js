@@ -133,10 +133,10 @@ global.localStorage = {
 
 // FileReader 모의
 global.FileReader = jest.fn(() => ({
-    readAsArrayBuffer: jest.fn(function() {
+    readAsArrayBuffer: jest.fn(function () {
         this.onload({ target: { result: new ArrayBuffer(8) } });
     }),
-    readAsText: jest.fn(function() {
+    readAsText: jest.fn(function () {
         this.onload({ target: { result: 'file content' } });
     })
 }));
@@ -154,8 +154,8 @@ global.URL = {
 };
 
 // requestAnimationFrame 모의
-global.requestAnimationFrame = jest.fn(cb => setTimeout(cb, 0));
-global.cancelAnimationFrame = jest.fn(id => clearTimeout(id));
+global.requestAnimationFrame = jest.fn((cb) => setTimeout(cb, 0));
+global.cancelAnimationFrame = jest.fn((id) => clearTimeout(id));
 
 // matchMedia 모의
 global.matchMedia = jest.fn(() => ({
