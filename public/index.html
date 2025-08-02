@@ -18,16 +18,23 @@
             const hostname = window.location.hostname;
             let apiKey;
             
+            console.log('현재 hostname:', hostname);
+            
             if (hostname === 'localhost' || hostname === '127.0.0.1') {
                 // 개발 환경
                 apiKey = 'test-key-for-ci';
-            } else if (hostname.includes('tmint.dev')) {
+                console.log('개발 환경 감지 - test key 사용');
+            } else if (hostname.includes('tmint.dev') || hostname.includes('sobicoupon')) {
                 // 실제 운영 환경 - 실제 키 사용
                 apiKey = '3f3d4ffe46c89bf004be8e8bf3a20ab8';
+                console.log('운영 환경 감지 - 실제 API 키 사용');
             } else {
                 // 기타 환경
                 apiKey = 'test-key-for-ci';
+                console.log('기타 환경 감지 - test key 사용');
             }
+            
+            console.log('선택된 API 키:', apiKey);
             
             // 전역 변수로 설정
             window.KAKAO_API_KEY = apiKey;
