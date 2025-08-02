@@ -47,7 +47,13 @@ const workersBuildOptions = {
 
 // 정적 파일 복사 함수
 async function copyStaticFiles() {
-    const staticFiles = ['public/styles.css', 'public/favicon.svg', 'public/index.html'];
+    const staticFiles = [
+        'public/styles.css',
+        'public/favicon.svg',
+        'public/index.html',
+        'public/sw.js',
+        'public/manifest.json'
+    ];
 
     // dist/public 디렉터리 생성
     if (!fs.existsSync('dist/public')) {
