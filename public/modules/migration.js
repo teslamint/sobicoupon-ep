@@ -40,7 +40,9 @@ export class CacheMigration {
             // 마이그레이션 완료 표시
             await this.markMigrationCompleted();
 
-            Utils.log(`캐시 마이그레이션 완료! 총 ${result.totalStores}개 가맹점, ${result.locations}개 위치 정보`);
+            Utils.log(
+                `캐시 마이그레이션 완료! 총 ${result.totalStores}개 가맹점, ${result.locations}개 위치 정보`
+            );
             return true;
         } catch (error) {
             Utils.error('마이그레이션 중 오류:', error);
@@ -53,8 +55,10 @@ export class CacheMigration {
     async isMigrationCompleted() {
         try {
             const migrationInfo = localStorage.getItem('cache_migration_info');
-            if (!migrationInfo) return false;
-            
+            if (!migrationInfo) {
+                return false;
+            }
+
             const info = JSON.parse(migrationInfo);
             return info.version === this.migrationVersion && info.completed === true;
         } catch {
@@ -98,7 +102,6 @@ export class CacheMigration {
                     }
                 } catch (versionError) {
                     Utils.log(`버전 ${version} 읽기 실패:`, versionError.message);
-                    continue;
                 }
             }
 
@@ -136,10 +139,10 @@ export class CacheMigration {
     async readOldDataFromVersion(version) {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.oldDBName, version);
-            
+
             request.onsuccess = (event) => {
                 const db = event.target.result;
-                
+
                 try {
                     // stores 오브젝트 스토어가 있는지 확인
                     if (!db.objectStoreNames.contains('stores')) {
@@ -178,13 +181,12 @@ export class CacheMigration {
         });
     }
 
-
     // 데이터 변환 (개선된 버전)
     transformData(oldData) {
         const locations = new Map();
         const categories = new Map();
         const stores = [];
-        
+
         let processedCount = 0;
         let locationCount = 0;
         let categoryCount = 0;
@@ -203,7 +205,9 @@ export class CacheMigration {
                 const 상호 = store.상호 || store.storeName || store.name || '';
 
                 if (!행정동 || !상호) {
-                    Utils.warn(`인덱스 ${index}: 필수 필드 누락 (행정동: ${행정동}, 상호: ${상호})`);
+                    Utils.warn(
+                        `인덱스 ${index}: 필수 필드 누락 (행정동: ${행정동}, 상호: ${상호})`
+                    );
                     return;
                 }
 
@@ -230,13 +234,14 @@ export class CacheMigration {
                 if (this.hasValidCoordinates(store)) {
                     const key = `${행정동}_${상호}`;
                     const coords = this.extractCoordinates(store.coords);
-                    
+
                     if (coords) {
                         const locationData = {
                             lat: coords.lat,
                             lng: coords.lng,
                             roadAddress: store.foundAddress || store.roadAddress || '',
-                            jibunAddress: store.상세주소 || store.jibunAddress || store.address || ''
+                            jibunAddress:
+                                store.상세주소 || store.jibunAddress || store.address || ''
                         };
 
                         locations.set(key, locationData);
@@ -255,17 +260,18 @@ export class CacheMigration {
                 if (processedCount > 0 && processedCount % 1000 === 0) {
                     Utils.log(`변환 진행률: ${processedCount}/${oldData.stores.length}`);
                 }
-
             } catch (itemError) {
                 Utils.warn(`인덱스 ${index} 변환 실패:`, itemError);
             }
         });
 
-        Utils.log(`데이터 변환 완료: 가맹점 ${processedCount}개, 위치 ${locationCount}개, 카테고리 ${categoryCount}개`);
+        Utils.log(
+            `데이터 변환 완료: 가맹점 ${processedCount}개, 위치 ${locationCount}개, 카테고리 ${categoryCount}개`
+        );
 
-        return { 
-            locations, 
-            categories, 
+        return {
+            locations,
+            categories,
             stores,
             stats: {
                 total: oldData.stores.length,
@@ -278,14 +284,20 @@ export class CacheMigration {
 
     // 유효한 좌표 정보 확인
     hasValidCoordinates(store) {
-        if (!store.coords) return false;
-        if (!(store.검색결과 === '찾음' || store.검색결과 === 'FOUND')) return false;
+        if (!store.coords) {
+            return false;
+        }
+        if (!(store.검색결과 === '찾음' || store.검색결과 === 'FOUND')) {
+            return false;
+        }
         return this.extractCoordinates(store.coords) !== null;
     }
 
     // 좌표 정보 추출 (여러 형식 지원)
     extractCoordinates(coords) {
-        if (!coords || typeof coords !== 'object') return null;
+        if (!coords || typeof coords !== 'object') {
+            return null;
+        }
 
         let lat, lng;
 
@@ -303,12 +315,10 @@ export class CacheMigration {
         else if (typeof coords.latitude === 'number' && typeof coords.longitude === 'number') {
             lat = coords.latitude;
             lng = coords.longitude;
-        }
-        else if (typeof coords.y === 'number' && typeof coords.x === 'number') {
+        } else if (typeof coords.y === 'number' && typeof coords.x === 'number') {
             lat = coords.y;
             lng = coords.x;
-        }
-        else {
+        } else {
             return null;
         }
 
@@ -324,14 +334,18 @@ export class CacheMigration {
     // 카테고리 정보 추출
     extractCategoryInfo(store) {
         const category = store.category || store.표준산업분류명 || '';
-        if (!category) return null;
+        if (!category) {
+            return null;
+        }
 
         const mainCategory = category.split(' > ')[0].trim();
-        if (!mainCategory) return null;
+        if (!mainCategory) {
+            return null;
+        }
 
         // 카테고리 코드 매핑 (필요시)
         const categoryCode = this.getCategoryCode(mainCategory);
-        
+
         return {
             code: categoryCode,
             name: mainCategory
@@ -342,14 +356,14 @@ export class CacheMigration {
     getCategoryCode(categoryName) {
         // 간단한 카테고리 코드 매핑
         const categoryMap = {
-            '음식점': 'FD6',
-            '편의점': 'CS2', 
-            '카페': 'CE7',
-            '병원': 'HP8',
-            '약국': 'PM9',
-            '학원': 'AC5',
-            '미용실': 'MT1',
-            '주유소': 'OL7'
+            음식점: 'FD6',
+            편의점: 'CS2',
+            카페: 'CE7',
+            병원: 'HP8',
+            약국: 'PM9',
+            학원: 'AC5',
+            미용실: 'MT1',
+            주유소: 'OL7'
         };
 
         return categoryMap[categoryName] || categoryName.substring(0, 3).toUpperCase();

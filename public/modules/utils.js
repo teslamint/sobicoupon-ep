@@ -11,13 +11,13 @@ export class Utils {
 
     static warn(message, ...args) {
         if (this.isDebugMode()) {
-            console.warn(message, ...args); // eslint-disable-line no-console
+            console.warn(message, ...args);
         }
     }
 
     static error(message, ...args) {
         // 에러는 항상 표시
-        console.error(message, ...args); // eslint-disable-line no-console
+        console.error(message, ...args);
     }
 
     static debug(message, ...args) {
