@@ -45,11 +45,11 @@ export default {
                 // CSP 헤더 - XSS 방지 (카카오맵 API 지원)
                 'Content-Security-Policy': [
                     "default-src 'self'",
-                    "script-src 'self' 'unsafe-inline' 'unsafe-eval' dapi.kakao.com *.daumcdn.net t1.daumcdn.net cdnjs.cloudflare.com",
-                    "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
-                    "font-src 'self' fonts.gstatic.com",
-                    "img-src 'self' data: blob: *.daumcdn.net t1.daumcdn.net map*.daumcdn.net",
-                    "connect-src 'self' dapi.kakao.com *.daumcdn.net",
+                    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://dapi.kakao.com https://*.daumcdn.net https://t1.daumcdn.net https://cdnjs.cloudflare.com",
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+                    "font-src 'self' https://fonts.gstatic.com",
+                    "img-src 'self' data: blob: https://*.daumcdn.net https://t1.daumcdn.net",
+                    "connect-src 'self' https://dapi.kakao.com https://*.daumcdn.net",
                     "media-src 'self' data: blob:",
                     "frame-src 'none'",
                     "object-src 'none'",
