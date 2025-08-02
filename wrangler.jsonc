@@ -34,7 +34,7 @@
 	 * 프로덕션에서는 Cloudflare Workers secrets을 사용합니다.
 	 */
 	"vars": {
-		"NODE_ENV": "development"
+		"NODE_ENV": "production"
 	},
 	/**
 	 * Note: Use secrets to store sensitive data.
