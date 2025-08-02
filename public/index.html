@@ -44,15 +44,21 @@
             // 동적으로 스크립트 태그 생성 (개선된 로딩)
             const script = document.createElement('script');
             script.type = 'text/javascript';
-            script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services,clusterer&autoload=false`;
+            script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services,clusterer`;
 
             // 로딩 완료 처리
             script.onload = function () {
                 console.log('✅ 카카오맵 SDK 스크립트 로드 완료');
-                // 수동으로 SDK 초기화
-                if (window.kakao && window.kakao.maps) {
-                    window.kakao.maps.load(function () {
-                        console.log('✅ 카카오맵 SDK 초기화 완료');
+
+                // 모든 라이브러리가 로드될 때까지 대기
+                const checkLibraries = () => {
+                    if (
+                        window.kakao &&
+                        window.kakao.maps &&
+                        window.kakao.maps.services &&
+                        window.kakao.maps.Clusterer
+                    ) {
+                        console.log('✅ 카카오맵 SDK 및 모든 라이브러리 로드 완료');
                         console.log('Maps API 사용 가능:', !!window.kakao.maps);
                         console.log('Services 라이브러리 사용 가능:', !!window.kakao.maps.services);
                         console.log(
@@ -62,8 +68,18 @@
 
                         // 앱 초기화 이벤트 발생
                         window.dispatchEvent(new CustomEvent('kakaoMapsReady'));
-                    });
-                }
+                    } else {
+                        console.log('라이브러리 로딩 대기 중...', {
+                            kakao: !!window.kakao,
+                            maps: !!window.kakao?.maps,
+                            services: !!window.kakao?.maps?.services,
+                            clusterer: !!window.kakao?.maps?.Clusterer
+                        });
+                        setTimeout(checkLibraries, 100);
+                    }
+                };
+
+                checkLibraries();
             };
 
             script.onerror = function (error) {

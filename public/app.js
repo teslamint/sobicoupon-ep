@@ -262,6 +262,17 @@ class App {
             const cachedLocations = await storageManager.getAllLocations();
             console.log(`캐시된 위치 정보 ${cachedLocations.size}개를 발견했습니다.`);
 
+            // 첫 5개 데이터 샘플 로깅 (디버깅용)
+            if (migratedStores.length > 0) {
+                console.log('🔍 마이그레이션된 데이터 샘플 (첫 3개):');
+                migratedStores.slice(0, 3).forEach((store, i) => {
+                    console.log(`샘플 ${i + 1}:`, {
+                        keys: Object.keys(store),
+                        data: `${JSON.stringify(store, null, 2).substring(0, 200)}...`
+                    });
+                });
+            }
+
             // 데이터 변환 (undefined 요소 필터링)
             const stores = migratedStores
                 .filter((store, index) => {
@@ -272,20 +283,24 @@ class App {
                     return true;
                 })
                 .map((store, index) => {
+                    // 마이그레이션된 데이터 구조 확인 및 적응
+                    const storeData = store.data || store; // 마이그레이션 시 data 필드에 원본이 있을 수 있음
+
                     const processedStore = {
-                        인덱스: store.인덱스 || index,
-                        읍면동명: store.행정동 || store.읍면동명 || '',
-                        행정동: store.행정동 || '',
-                        상호: store.상호 || '',
-                        표준산업분류명: store.category
-                            ? store.category.split(' > ')[0]
-                            : store.표준산업분류명 || store.업종 || store.분류 || '',
-                        도로명주소: store.foundAddress || store.상세주소 || '',
-                        지번주소: store.상세주소 || '',
-                        상세주소: store.상세주소 || '',
+                        인덱스: storeData.인덱스 || store.인덱스 || index,
+                        읍면동명: storeData.행정동 || storeData.읍면동명 || store.dong || '',
+                        행정동: storeData.행정동 || store.dong || '',
+                        상호: storeData.상호 || store.store || '',
+                        표준산업분류명: storeData.category
+                            ? storeData.category.split(' > ')[0]
+                            : storeData.표준산업분류명 || storeData.업종 || storeData.분류 || '',
+                        도로명주소:
+                            storeData.foundAddress || storeData.상세주소 || store.address || '',
+                        지번주소: storeData.상세주소 || store.address || '',
+                        상세주소: storeData.상세주소 || store.address || '',
                         location: null,
                         searched: false,
-                        검색결과: store.검색결과 || ''
+                        검색결과: storeData.검색결과 || ''
                     };
 
                     // 캐시된 위치 정보 적용 - 개선된 키 매칭
