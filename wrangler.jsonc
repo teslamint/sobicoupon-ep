@@ -5,8 +5,11 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "sobicoupon",
-	"compatibility_date": "2025-07-19",
-	"main": "src/index.js",
+	"compatibility_date": "2025-07-12",
+	"main": "dist/index.js",
+	"build": {
+		"command": "npm run build"
+	},
 	"observability": {
 		"enabled": true
 	},
@@ -26,8 +29,13 @@
 	/**
 	 * Environment Variables
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
+	 *
+	 * 로컬 개발 환경에서는 .env.local 파일의 환경변수를 사용합니다.
+	 * 프로덕션에서는 Cloudflare Workers secrets을 사용합니다.
 	 */
-	// "vars": { "MY_VARIABLE": "production_value" },
+	"vars": {
+		"NODE_ENV": "production"
+	},
 	/**
 	 * Note: Use secrets to store sensitive data.
 	 * https://developers.cloudflare.com/workers/configuration/secrets/
@@ -38,7 +46,7 @@
 	 * https://developers.cloudflare.com/workers/static-assets/binding/
 	 */
     "assets": {
-        "directory": "./public",
+        "directory": "./dist/public",
         "binding": "ASSETS",
         "run_worker_first": true
     }

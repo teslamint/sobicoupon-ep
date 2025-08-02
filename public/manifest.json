@@ -1,0 +1,30 @@
+{
+  "name": "은평구 소비쿠폰 가맹점 찾기",
+  "short_name": "은평구쿠폰",
+  "description": "은평구 소비쿠폰 사용 가능 가맹점 위치 검색 시스템",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#667eea",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["utilities", "navigation"],
+  "lang": "ko",
+  "orientation": "portrait-primary"
+}

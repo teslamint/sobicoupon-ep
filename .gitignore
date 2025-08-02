@@ -2,3 +2,10 @@
 .dev.vars
 .wrangler
 /wrangler.log
+/coverage/
+.env
+.env.local
+.env.production
+/playwright-report/
+/test-results/
+/dist/

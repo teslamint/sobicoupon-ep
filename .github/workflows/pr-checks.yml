@@ -1,0 +1,322 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # PR 정보 및 변경사항 분석
+  pr-analysis:
+    name: PR Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    outputs:
+      has-frontend-changes: ${{ steps.changes.outputs.frontend }}
+      has-test-changes: ${{ steps.changes.outputs.tests }}
+      files-changed: ${{ steps.changes.outputs.files }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            frontend:
+              - 'public/**'
+              - 'src/**'
+              - '*.js'
+              - '*.ts'
+              - '*.html'
+              - '*.css'
+            tests:
+              - 'tests/**'
+              - '**/*.test.js'
+              - '**/*.spec.js'
+            config:
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - '.github/**'
+              - 'playwright.config.js'
+              - 'jest.config.js'
+
+      - name: PR size check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              const { data: files } = await github.rest.pulls.listFiles({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+              });
+
+              const additions = files.reduce((sum, file) => sum + file.additions, 0);
+              const deletions = files.reduce((sum, file) => sum + file.deletions, 0);
+              const totalChanges = additions + deletions;
+
+              let sizeLabel = '';
+              if (totalChanges < 100) sizeLabel = '🟢 Small';
+              else if (totalChanges < 500) sizeLabel = '🟡 Medium';
+              else if (totalChanges < 1000) sizeLabel = '🟠 Large';
+              else sizeLabel = '🔴 XLarge';
+
+              console.log(`PR 분석 결과: ${sizeLabel} (${totalChanges} 라인 변경)`);
+              console.log(`파일 수: ${files.length}, 추가: ${additions}, 삭제: ${deletions}`);
+
+              // PR 댓글 작성 시도 (실패해도 워크플로는 계속 진행)
+              try {
+                const comment = `## 📊 PR 분석 결과
+
+                **크기**: ${sizeLabel} (${totalChanges} 라인 변경)
+                - ➕ ${additions} 라인 추가
+                - ➖ ${deletions} 라인 삭제
+                - 📁 ${files.length}개 파일 변경
+
+                **변경사항 유형**:
+                ${files.some(f => f.filename.includes('test')) ? '✅ 테스트 파일 포함' : '⚠️ 테스트 파일 없음'}
+                ${files.some(f => f.filename.includes('.md')) ? '📝 문서 변경 포함' : ''}
+                `;
+
+                if (context.payload.pull_request && context.payload.pull_request.number) {
+                  await github.rest.issues.createComment({
+                    issue_number: context.payload.pull_request.number,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    body: comment
+                  });
+                  console.log('PR 분석 댓글 작성 성공');
+                } else {
+                  console.log('PR 컨텍스트가 없어 댓글 작성을 건너뜁니다.');
+                }
+              } catch (commentError) {
+                console.log('PR 분석 댓글 작성 실패 (권한 문제일 수 있음):', commentError.message);
+                // 댓글 작성 실패는 무시하고 계속 진행
+              }
+            } catch (error) {
+              console.error('PR 분석 실패:', error);
+              throw error;
+            }
+
+  # 빠른 검증 (린트, 포맷팅)
+  quick-checks:
+    name: Quick Checks
+    runs-on: ubuntu-latest
+    needs: pr-analysis
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: ESLint check
+        run: pnpm run lint:check
+
+      - name: Prettier check
+        run: pnpm run format:check
+
+      - name: TypeScript check
+        run: pnpm run type-check
+
+  # 핵심 테스트 (변경사항이 있을 때만)
+  essential-tests:
+    name: Essential Tests
+    runs-on: ubuntu-latest
+    needs: [pr-analysis, quick-checks]
+    if: needs.pr-analysis.outputs.has-frontend-changes == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run unit tests
+        run: pnpm test
+
+      - name: Build project
+        run: pnpm run build
+        env:
+            CI: true
+            KAKAO_API_KEY: test-key-for-ci
+
+      - name: Install http-server
+        run: npm install -g http-server
+
+      - name: Install Playwright
+        run: npx playwright install chromium --with-deps
+
+      - name: Start static server
+        run: |
+          cd dist/public
+          nohup http-server -p 8787 -c-1 --cors > server.log 2>&1 &
+          SERVER_PID=$!
+          echo "서버 PID: $SERVER_PID"
+          
+          # 서버가 완전히 시작될 때까지 기다리기
+          for i in {1..30}; do
+            if curl -f http://localhost:8787/ > /dev/null 2>&1; then
+              echo "서버가 성공적으로 시작되었습니다 (시도 $i/30)"
+              break
+            fi
+            echo "서버 시작 대기 중... (시도 $i/30)"
+            sleep 2
+          done
+          
+          # 최종 상태 확인
+          if ! curl -f http://localhost:8787/ > /dev/null 2>&1; then
+            echo "서버 시작 실패!"
+            cat server.log
+            exit 1
+          fi
+          
+          echo "서버 응답 테스트:"
+          curl -I http://localhost:8787/
+        env:
+          CI: true
+          KAKAO_API_KEY: test-key-for-ci
+
+      - name: Run smoke E2E tests (Chromium only)
+        run: npx playwright test --project=chromium tests/e2e/smoke.spec.js
+        env:
+          CI: true
+          KAKAO_API_KEY: test-key-for-ci
+
+  # 보안 검사
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: quick-checks
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Security audit
+        run: pnpm audit --audit-level=high
+
+  # PR 상태 요약
+  pr-status:
+    name: PR Status Summary
+    runs-on: ubuntu-latest
+    needs: [quick-checks, essential-tests, security-scan]
+    if: always()
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Check results and comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              const needs = ${{ toJSON(needs) }};
+
+              let status = '✅ 모든 검사 통과';
+              let color = '28a745'; // 녹색
+
+              const results = Object.entries(needs);
+              const failed = results.filter(([, result]) => result.result === 'failure');
+              const skipped = results.filter(([, result]) => result.result === 'skipped');
+
+              if (failed.length > 0) {
+                status = `❌ ${failed.length}개 검사 실패`;
+                color = 'dc3545'; // 빨간색
+              } else if (skipped.length > 0) {
+                status = `⚠️ ${skipped.length}개 검사 건너뜀`;
+                color = 'ffc107'; // 노란색
+              }
+
+              console.log(`PR 검사 상태: ${status}`);
+              console.log('검사 결과:', results.map(([job, result]) => `${job}: ${result.result}`).join(', '));
+
+              // PR 댓글 작성 시도 (실패해도 워크플로는 계속 진행)
+              try {
+                const comment = `## 🔍 PR 검사 결과
+
+                **상태**: ${status}
+
+                ### 상세 결과
+                ${results.map(([job, result]) => {
+                  const emoji = result.result === 'success' ? '✅' :
+                               result.result === 'failure' ? '❌' :
+                               result.result === 'skipped' ? '⏭️' : '🟡';
+                  return `- ${emoji} **${job}**: ${result.result}`;
+                }).join('
+')}
+
+                ${failed.length > 0 ? '⚠️ **실패한 검사를 수정한 후 다시 커밋해 주세요.**' : ''}
+                ${status === '✅ 모든 검사 통과' ? '🎉 **이 PR은 병합 준비가 완료되었습니다!**' : ''}
+                `;
+
+                if (context.payload.pull_request && context.payload.pull_request.number) {
+                  await github.rest.issues.createComment({
+                    issue_number: context.payload.pull_request.number,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    body: comment
+                  });
+                  console.log('PR 상태 댓글 작성 성공');
+                } else {
+                  console.log('PR 컨텍스트가 없어 댓글 작성을 건너뜁니다.');
+                }
+              } catch (commentError) {
+                console.log('PR 상태 댓글 작성 실패 (권한 문제일 수 있음):', commentError.message);
+                // 댓글 작성 실패는 무시하고 계속 진행
+              }
+            } catch (error) {
+              console.error('PR 상태 확인 실패:', error);
+              throw error;
+            }

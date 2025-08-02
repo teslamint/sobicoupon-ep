@@ -2,26 +2,30 @@
 function toggleFullscreen() {
     const mapElement = document.getElementById('map');
     const toggleBtn = document.querySelector('.fullscreen-toggle');
-    
+
     if (mapElement.classList.contains('fullscreen')) {
         // 전체화면 해제
         mapElement.classList.remove('fullscreen');
-        toggleBtn.innerHTML = '⛶';
+        toggleBtn.textContent = '⛶';
         toggleBtn.title = '전체화면';
-        
+
         // 지도 크기 재조정
         setTimeout(() => {
-            map.relayout();
+            if (window.mapManager && window.mapManager.map) {
+                window.mapManager.relayout();
+            }
         }, 100);
     } else {
         // 전체화면 활성화
         mapElement.classList.add('fullscreen');
-        toggleBtn.innerHTML = '✕';
+        toggleBtn.textContent = '✕';
         toggleBtn.title = '전체화면 닫기';
-        
+
         // 지도 크기 재조정
         setTimeout(() => {
-            map.relayout();
+            if (window.mapManager && window.mapManager.map) {
+                window.mapManager.relayout();
+            }
         }, 100);
     }
 }
@@ -30,7 +34,7 @@ function toggleFullscreen() {
 function checkMobile() {
     const isMobile = window.innerWidth <= 768;
     const fullscreenBtn = document.querySelector('.fullscreen-toggle');
-    
+
     if (fullscreenBtn) {
         fullscreenBtn.style.display = isMobile ? 'flex' : 'none';
     }

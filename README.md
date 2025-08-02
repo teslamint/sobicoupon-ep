@@ -1,5 +1,9 @@
 # 은평구 소비쿠폰 가맹점 위치 검색 시스템
 
+[![CI/CD Pipeline](https://github.com/teslamint/sobicoupon/actions/workflows/ci.yml/badge.svg)](https://github.com/teslamint/sobicoupon/actions/workflows/ci.yml)
+[![Security Scans](https://github.com/teslamint/sobicoupon/actions/workflows/security.yml/badge.svg)](https://github.com/teslamint/sobicoupon/actions/workflows/security.yml)
+[![Performance Tests](https://github.com/teslamint/sobicoupon/actions/workflows/performance.yml/badge.svg)](https://github.com/teslamint/sobicoupon/actions/workflows/performance.yml)
+
 ## 개요
 은평구 민생회복 소비쿠폰을 사용할 수 있는 가맹점의 위치를 카카오맵 API로 검색하고 지도에 표시하는 웹 애플리케이션입니다.
 
@@ -16,17 +20,31 @@
 
 ### 1. 개발 환경
 
-1. `.dev.vars` 파일에 카카오 API 키 설정:
+#### 로컬 개발 설정
+
+1. `.env.local` 파일 생성 및 카카오 API 키 설정:
 
    ```
-   KAKAO_API_KEY=your-kakao-api-key
+   KAKAO_API_KEY=your_kakao_javascript_api_key_here
+   NODE_ENV=development
    ```
+
+   > **중요**: `.env.local` 파일은 Git에 커밋되지 않으므로 안전합니다.
 
 2. 개발 서버 실행:
 
    ```bash
+   pnpm wrangler dev
+   # 또는
    npm run dev
    ```
+
+#### 카카오 API 키 발급 방법
+
+1. [카카오 개발자센터](https://developers.kakao.com/)에 로그인
+2. "내 애플리케이션" → "애플리케이션 추가하기"
+3. 앱 이름, 사업자명 입력 후 저장
+4. "앱 키" 탭에서 **JavaScript 키**를 복사하여 `.env.local`에 설정
 
 ### 2. 프로덕션 배포
 
