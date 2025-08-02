@@ -41,57 +41,135 @@
             // 전역 변수로 설정
             window.KAKAO_API_KEY = apiKey;
 
-            // 동적으로 스크립트 태그 생성 (개선된 로딩)
-            const script = document.createElement('script');
-            script.type = 'text/javascript';
-            script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services&libraries=clusterer`;
+            // 순차적 스크립트 로딩으로 변경
+            console.log('카카오맵 SDK 순차 로딩 시작...');
 
-            // 로딩 완료 처리
-            script.onload = function () {
-                console.log('✅ 카카오맵 SDK 스크립트 로드 완료');
+            // 1단계: 기본 Maps SDK 로드
+            const loadBasicSDK = () => {
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.type = 'text/javascript';
+                    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}`;
 
-                // 라이브러리 로드 확인 (Clusterer는 선택적)
-                const checkLibraries = () => {
-                    const hasKakao = window.kakao && window.kakao.maps;
-                    const hasServices = window.kakao?.maps?.services;
-                    const hasClusterer = window.kakao?.maps?.Clusterer;
+                    script.onload = () => {
+                        console.log('✅ 기본 카카오맵 SDK 로드 완료');
+                        resolve();
+                    };
 
-                    console.log('라이브러리 로딩 상태:', {
-                        kakao: !!hasKakao,
-                        services: !!hasServices,
-                        clusterer: !!hasClusterer
+                    script.onerror = (error) => {
+                        console.error('❌ 기본 카카오맵 SDK 로드 실패:', error);
+                        reject(error);
+                    };
+
+                    document.head.appendChild(script);
+                });
+            };
+
+            // 2단계: Services 라이브러리 로드
+            const loadServicesLibrary = () => {
+                return new Promise((resolve, reject) => {
+                    if (window.kakao?.maps?.services) {
+                        console.log('✅ Services 라이브러리 이미 로드됨');
+                        resolve();
+                        return;
+                    }
+
+                    const script = document.createElement('script');
+                    script.type = 'text/javascript';
+                    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services`;
+
+                    script.onload = () => {
+                        console.log('✅ Services 라이브러리 로드 완료');
+
+                        // Services 라이브러리 로드 확인
+                        const checkServices = (attempts = 0) => {
+                            if (window.kakao?.maps?.services) {
+                                console.log('✅ Services 라이브러리 사용 가능 확인됨');
+                                resolve();
+                            } else if (attempts < 50) {
+                                // 5초 대기
+                                console.log(`Services 라이브러리 대기 중... (${attempts + 1}/50)`);
+                                setTimeout(() => checkServices(attempts + 1), 100);
+                            } else {
+                                console.error('❌ Services 라이브러리 로드 시간 초과');
+                                reject(new Error('Services library load timeout'));
+                            }
+                        };
+
+                        checkServices();
+                    };
+
+                    script.onerror = (error) => {
+                        console.error('❌ Services 라이브러리 로드 실패:', error);
+                        reject(error);
+                    };
+
+                    document.head.appendChild(script);
+                });
+            };
+
+            // 3단계: Clusterer 라이브러리 로드 (선택적)
+            const loadClustererLibrary = () => {
+                return new Promise((resolve) => {
+                    if (window.kakao?.maps?.Clusterer) {
+                        console.log('✅ Clusterer 라이브러리 이미 로드됨');
+                        resolve();
+                        return;
+                    }
+
+                    const script = document.createElement('script');
+                    script.type = 'text/javascript';
+                    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=clusterer`;
+
+                    script.onload = () => {
+                        console.log('✅ Clusterer 라이브러리 로드 완료');
+
+                        // Clusterer 라이브러리 확인 (선택적이므로 실패해도 계속 진행)
+                        setTimeout(() => {
+                            if (window.kakao?.maps?.Clusterer) {
+                                console.log('✅ Clusterer 라이브러리 사용 가능');
+                            } else {
+                                console.warn(
+                                    '⚠️ Clusterer 라이브러리 로드 실패 - 클러스터링 기능 제한됨'
+                                );
+                            }
+                            resolve();
+                        }, 1000);
+                    };
+
+                    script.onerror = () => {
+                        console.warn('⚠️ Clusterer 라이브러리 로드 실패 - 계속 진행');
+                        resolve(); // 선택적 라이브러리이므로 실패해도 계속 진행
+                    };
+
+                    document.head.appendChild(script);
+                });
+            };
+
+            // 순차적으로 라이브러리 로드
+            const initializeKakaoMaps = async () => {
+                try {
+                    await loadBasicSDK();
+                    await loadServicesLibrary();
+                    await loadClustererLibrary();
+
+                    console.log('🎉 모든 카카오맵 라이브러리 로드 완료');
+                    console.log('최종 상태:', {
+                        maps: !!window.kakao?.maps,
+                        services: !!window.kakao?.maps?.services,
+                        clusterer: !!window.kakao?.maps?.Clusterer
                     });
 
-                    // Services는 필수, Clusterer는 선택적으로 처리
-                    if (hasKakao && hasServices) {
-                        console.log('✅ 카카오맵 SDK 및 필수 라이브러리 로드 완료');
-                        console.log('Maps API 사용 가능:', !!window.kakao.maps);
-                        console.log('Services 라이브러리 사용 가능:', !!hasServices);
-                        console.log('Clusterer 라이브러리 사용 가능:', !!hasClusterer);
-
-                        if (!hasClusterer) {
-                            console.warn(
-                                '⚠️ Clusterer 라이브러리 로드 실패 - 클러스터링 기능 제한됨'
-                            );
-                        }
-
-                        // 앱 초기화 이벤트 발생
-                        window.dispatchEvent(new CustomEvent('kakaoMapsReady'));
-                    } else {
-                        console.log('필수 라이브러리 로딩 대기 중...');
-                        setTimeout(checkLibraries, 100);
-                    }
-                };
-
-                checkLibraries();
+                    // 앱 초기화 이벤트 발생
+                    window.dispatchEvent(new CustomEvent('kakaoMapsReady'));
+                } catch (error) {
+                    console.error('❌ 카카오맵 라이브러리 로드 중 오류:', error);
+                    console.error('API 키 확인:', apiKey.substring(0, 8) + '...');
+                }
             };
 
-            script.onerror = function (error) {
-                console.error('❌ 카카오맵 SDK 로드 실패:', error);
-                console.error('API 키 확인:', apiKey.substring(0, 8) + '...');
-            };
-
-            document.head.appendChild(script);
+            // 로딩 시작
+            initializeKakaoMaps();
         </script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     </head>
