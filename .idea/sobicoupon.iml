@@ -10,6 +10,8 @@
       <excludeFolder url="file://$MODULE_DIR$/playwright-report" />
       <excludeFolder url="file://$MODULE_DIR$/public/dist" />
       <excludeFolder url="file://$MODULE_DIR$/test-results" />
+      <excludeFolder url="file://$MODULE_DIR$/.serena/cache/typescript" />
+      <excludeFolder url="file://$MODULE_DIR$/.wrangler" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

@@ -382,8 +382,7 @@ export class RecoveryManager {
             // 새 스크립트 로딩
             const script = document.createElement('script');
             script.type = 'text/javascript';
-            script.src =
-                '//dapi.kakao.com/v2/maps/sdk.js?appkey=[KAKAO_API_KEY]&libraries=services,clusterer';
+            script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${window.KAKAO_API_KEY || '[KAKAO_API_KEY]'}&libraries=services,clusterer`;
             script.onload = () => resolve();
             script.onerror = () => reject(new Error('카카오맵 SDK 로딩 실패'));
 
