@@ -189,92 +189,117 @@ export class MapManager {
 
     // 클러스터러 초기화
     initClusterer() {
-        this.clusterer = new kakao.maps.MarkerClusterer({
-            map: this.map,
-            averageCenter: true,
-            minLevel: CONSTANTS.MAP.CLUSTER_MIN_LEVEL,
-            disableClickZoom: false,
-            styles: [
-                {
-                    width: '30px',
-                    height: '30px',
-                    background: 'rgba(102, 126, 234, .8)',
-                    borderRadius: '15px',
-                    color: '#fff',
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    lineHeight: '31px'
-                },
-                {
-                    width: '40px',
-                    height: '40px',
-                    background: 'rgba(102, 126, 234, .9)',
-                    borderRadius: '20px',
-                    color: '#fff',
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    lineHeight: '40px'
-                },
-                {
-                    width: '50px',
-                    height: '50px',
-                    background: 'rgba(118, 75, 162, .8)',
-                    borderRadius: '25px',
-                    color: '#fff',
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    lineHeight: '50px'
-                },
-                {
-                    width: '60px',
-                    height: '60px',
-                    background: 'rgba(102, 126, 234, .8)',
-                    borderRadius: '30px',
-                    color: '#fff',
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    lineHeight: '60px'
-                },
-                {
-                    width: '70px',
-                    height: '70px',
-                    background: 'rgba(118, 75, 162, .8)',
-                    borderRadius: '35px',
-                    color: '#fff',
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    lineHeight: '70px'
-                },
-                {
-                    width: '80px',
-                    height: '80px',
-                    background: 'rgba(220, 53, 69, .8)',
-                    borderRadius: '40px',
-                    color: '#fff',
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    lineHeight: '80px'
-                }
-            ]
-        });
+        // Clusterer 라이브러리 우회 처리
+        if (!window.kakao?.maps?.MarkerClusterer) {
+            console.warn('⚠️ MarkerClusterer가 없어서 클러스터링 기능을 건너뜁니다.');
+            this.clusterer = null;
+            stateManager.setState({ clusterer: null });
+            return;
+        }
 
-        stateManager.setState({ clusterer: this.clusterer });
+        try {
+            this.clusterer = new kakao.maps.MarkerClusterer({
+                map: this.map,
+                averageCenter: true,
+                minLevel: CONSTANTS.MAP.CLUSTER_MIN_LEVEL,
+                disableClickZoom: false,
+                styles: [
+                    {
+                        width: '30px',
+                        height: '30px',
+                        background: 'rgba(102, 126, 234, .8)',
+                        borderRadius: '15px',
+                        color: '#fff',
+                        textAlign: 'center',
+                        fontWeight: 'bold',
+                        lineHeight: '31px'
+                    },
+                    {
+                        width: '40px',
+                        height: '40px',
+                        background: 'rgba(102, 126, 234, .9)',
+                        borderRadius: '20px',
+                        color: '#fff',
+                        textAlign: 'center',
+                        fontWeight: 'bold',
+                        lineHeight: '40px'
+                    },
+                    {
+                        width: '50px',
+                        height: '50px',
+                        background: 'rgba(118, 75, 162, .8)',
+                        borderRadius: '25px',
+                        color: '#fff',
+                        textAlign: 'center',
+                        fontWeight: 'bold',
+                        lineHeight: '50px'
+                    },
+                    {
+                        width: '60px',
+                        height: '60px',
+                        background: 'rgba(102, 126, 234, .8)',
+                        borderRadius: '30px',
+                        color: '#fff',
+                        textAlign: 'center',
+                        fontWeight: 'bold',
+                        lineHeight: '60px'
+                    },
+                    {
+                        width: '70px',
+                        height: '70px',
+                        background: 'rgba(118, 75, 162, .8)',
+                        borderRadius: '35px',
+                        color: '#fff',
+                        textAlign: 'center',
+                        fontWeight: 'bold',
+                        lineHeight: '70px'
+                    },
+                    {
+                        width: '80px',
+                        height: '80px',
+                        background: 'rgba(220, 53, 69, .8)',
+                        borderRadius: '40px',
+                        color: '#fff',
+                        textAlign: 'center',
+                        fontWeight: 'bold',
+                        lineHeight: '80px'
+                    }
+                ]
+            });
+
+            console.log('✅ MarkerClusterer 초기화 완료');
+            stateManager.setState({ clusterer: this.clusterer });
+        } catch (error) {
+            console.warn('⚠️ MarkerClusterer 초기화 실패, 클러스터링 없이 진행:', error);
+            this.clusterer = null;
+            stateManager.setState({ clusterer: null });
+        }
     }
 
     // 이벤트 리스너 설정
     setupEventListeners() {
         // 지도 이동/확대 이벤트
-        this.addEventListenerTracked(this.map, 'idle', () => {
-            stateManager.setState({
-                mapCenter: this.map.getCenter(),
-                mapLevel: this.map.getLevel()
-            });
-        });
+        this.addEventListenerTracked(
+            this.map,
+            'idle',
+            () => {
+                stateManager.setState({
+                    mapCenter: this.map.getCenter(),
+                    mapLevel: this.map.getLevel()
+                });
+            },
+            'kakao'
+        );
 
         // 지도 클릭 이벤트
-        this.addEventListenerTracked(this.map, 'click', () => {
-            this.closeInfoWindow();
-        });
+        this.addEventListenerTracked(
+            this.map,
+            'click',
+            () => {
+                this.closeInfoWindow();
+            },
+            'kakao'
+        );
     }
 
     // 마커 생성
