@@ -2,7 +2,7 @@
 /// <reference lib="webworker" />
 
 // Service Worker for Eunpyeong Coupon Store Locator
-const CACHE_NAME = 'eunpyeong-coupon-v1';
+const CACHE_NAME = 'eunpyeong-coupon-v2';
 const urlsToCache = [
     '/',
     '/index.html',
