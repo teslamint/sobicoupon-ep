@@ -31,14 +31,12 @@ class App {
             // 전역 에러 핸들러 설정
             this.setupGlobalErrorHandler();
 
+            // 마이그레이션 먼저 실행 (SDK 로드 전에)
+            await storageManager.init();
+            await this.waitForMigrationComplete();
+
             // 카카오맵 SDK가 로드될 때까지 대기
             await this.waitForKakaoSDK();
-
-            // 모듈 초기화 (마이그레이션 완료까지 대기)
-            await storageManager.init();
-
-            // 마이그레이션이 완료될 때까지 추가 대기
-            await this.waitForMigrationComplete();
 
             uiManager.init();
 
