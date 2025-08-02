@@ -72,9 +72,8 @@ async function copyStaticFiles() {
     if (fs.existsSync(indexPath)) {
         let indexContent = fs.readFileSync(indexPath, 'utf8');
 
-        // KAKAO_API_KEY 환경변수로 대체
-        const kakaoApiKey = process.env.KAKAO_API_KEY || 'test-key-for-ci';
-        indexContent = indexContent.replace('[KAKAO_API_KEY]', kakaoApiKey);
+        // KAKAO_API_KEY는 Cloudflare Workers에서 runtime에 치환
+        // 빌드 시에는 플레이스홀더 유지
 
         // 원본 파일 참조를 빌드된 파일 참조로 변경
         indexContent = indexContent.replace(
@@ -88,24 +87,8 @@ async function copyStaticFiles() {
         fs.writeFileSync(indexPath, indexContent);
     }
 
-    // 모든 JavaScript 모듈 파일의 KAKAO_API_KEY 플레이스홀더 대체
-    const modulesDir = 'dist/public/modules';
-    if (fs.existsSync(modulesDir)) {
-        const moduleFiles = fs.readdirSync(modulesDir).filter((file) => file.endsWith('.js'));
-        const kakaoApiKey = process.env.KAKAO_API_KEY || 'test-key-for-ci';
-
-        for (const file of moduleFiles) {
-            const filePath = path.join(modulesDir, file);
-            let content = fs.readFileSync(filePath, 'utf8');
-
-            // [KAKAO_API_KEY] 플레이스홀더를 실제 API 키로 대체
-            if (content.includes('[KAKAO_API_KEY]')) {
-                content = content.replace(/\[KAKAO_API_KEY\]/g, kakaoApiKey);
-                fs.writeFileSync(filePath, content);
-                console.log(`✅ ${file}에서 KAKAO_API_KEY 플레이스홀더 대체 완료`);
-            }
-        }
-    }
+    // 모듈 파일들은 플레이스홀더를 그대로 유지
+    // Cloudflare Workers에서 runtime에 window.KAKAO_API_KEY를 사용
 }
 
 async function build() {

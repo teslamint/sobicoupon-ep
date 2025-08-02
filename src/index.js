@@ -4,7 +4,14 @@ export default {
 
         // index.html 요청 처리
         if (url.pathname === '/' || url.pathname === '/index.html') {
-            // 환경변수 검증 (CI 환경에서는 완화된 검증)
+            // 환경변수 검증 및 디버깅
+            console.log('Environment debug:', {
+                NODE_ENV: env.NODE_ENV,
+                CI: env.CI,
+                hasKakaoApiKey: !!env.KAKAO_API_KEY,
+                kakaoApiKeyLength: env.KAKAO_API_KEY?.length || 0
+            });
+
             const isCI = env.CI === 'true' || env.NODE_ENV === 'test';
             const kakaoApiKey = env.KAKAO_API_KEY || 'test-key-for-ci';
 
@@ -26,7 +33,16 @@ export default {
 
             // HTML 컨텐츠를 텍스트로 읽어서 치환
             const html = await response.text();
-            const modifiedHtml = html.replace('[KAKAO_API_KEY]', kakaoApiKey).replace(
+
+            // 디버깅: 플레이스홀더 확인
+            const hasPlaceholder = html.includes('[KAKAO_API_KEY]');
+            console.log('HTML replacement debug:', {
+                hasPlaceholder,
+                htmlLength: html.length,
+                kakaoApiKey: `${kakaoApiKey.substring(0, 8)}...`
+            });
+
+            const modifiedHtml = html.replace(/\[KAKAO_API_KEY\]/g, kakaoApiKey).replace(
                 '</head>',
                 `
           <script>
