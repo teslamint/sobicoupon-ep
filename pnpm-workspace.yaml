@@ -1,6 +1,7 @@
 packages:
-  - "."
+  - .
 
 onlyBuiltDependencies:
   - esbuild
+  - unrs-resolver
   - workerd

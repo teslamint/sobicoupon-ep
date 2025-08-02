@@ -62,7 +62,10 @@
       "Bash(yamllint:*)",
       "Bash(gh workflow:*)",
       "Bash(git --no-pager diff --no-ext-diff)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(echo:*)",
+      "Bash(git checkout:*)",
+      "Bash(pnpm add:*)"
     ],
     "deny": []
   }
