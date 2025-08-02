@@ -50,31 +50,35 @@
             script.onload = function () {
                 console.log('✅ 카카오맵 SDK 스크립트 로드 완료');
 
-                // 모든 라이브러리가 로드될 때까지 대기
+                // 라이브러리 로드 확인 (Clusterer는 선택적)
                 const checkLibraries = () => {
-                    if (
-                        window.kakao &&
-                        window.kakao.maps &&
-                        window.kakao.maps.services &&
-                        window.kakao.maps.Clusterer
-                    ) {
-                        console.log('✅ 카카오맵 SDK 및 모든 라이브러리 로드 완료');
+                    const hasKakao = window.kakao && window.kakao.maps;
+                    const hasServices = window.kakao?.maps?.services;
+                    const hasClusterer = window.kakao?.maps?.Clusterer;
+
+                    console.log('라이브러리 로딩 상태:', {
+                        kakao: !!hasKakao,
+                        services: !!hasServices,
+                        clusterer: !!hasClusterer
+                    });
+
+                    // Services는 필수, Clusterer는 선택적으로 처리
+                    if (hasKakao && hasServices) {
+                        console.log('✅ 카카오맵 SDK 및 필수 라이브러리 로드 완료');
                         console.log('Maps API 사용 가능:', !!window.kakao.maps);
-                        console.log('Services 라이브러리 사용 가능:', !!window.kakao.maps.services);
-                        console.log(
-                            'Clusterer 라이브러리 사용 가능:',
-                            !!window.kakao.maps.Clusterer
-                        );
+                        console.log('Services 라이브러리 사용 가능:', !!hasServices);
+                        console.log('Clusterer 라이브러리 사용 가능:', !!hasClusterer);
+
+                        if (!hasClusterer) {
+                            console.warn(
+                                '⚠️ Clusterer 라이브러리 로드 실패 - 클러스터링 기능 제한됨'
+                            );
+                        }
 
                         // 앱 초기화 이벤트 발생
                         window.dispatchEvent(new CustomEvent('kakaoMapsReady'));
                     } else {
-                        console.log('라이브러리 로딩 대기 중...', {
-                            kakao: !!window.kakao,
-                            maps: !!window.kakao?.maps,
-                            services: !!window.kakao?.maps?.services,
-                            clusterer: !!window.kakao?.maps?.Clusterer
-                        });
+                        console.log('필수 라이브러리 로딩 대기 중...');
                         setTimeout(checkLibraries, 100);
                     }
                 };
