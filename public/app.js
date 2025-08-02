@@ -60,28 +60,43 @@ class App {
         }
     }
 
-    // 카카오맵 SDK 로드 대기
+    // 카카오맵 SDK 로드 대기 (이벤트 기반)
     async waitForKakaoSDK() {
         return new Promise((resolve, reject) => {
-            let attempts = 0;
-            const maxAttempts = 50; // 5초 대기
+            // 이미 로드된 경우 바로 확인
+            if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
+                console.log('✅ 카카오맵 SDK가 이미 로드되어 있습니다.');
+                resolve();
+                return;
+            }
 
-            const checkKakao = () => {
-                if (window.kakao && window.kakao.maps) {
+            // 카스텀 이벤트 리스너 등록
+            const handleKakaoReady = () => {
+                console.log('📢 kakaoMapsReady 이벤트 수신');
+                // Services 라이브러리 재확인
+                if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
+                    console.log('✅ Services 라이브러리 확인 완료');
+                    window.removeEventListener('kakaoMapsReady', handleKakaoReady);
                     resolve();
-                    return;
+                } else {
+                    console.warn('⚠️ Services 라이브러리가 아직 로드되지 않음, 재시도...');
+                    setTimeout(() => {
+                        if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
+                            resolve();
+                        } else {
+                            reject(new AppError('카카오맵 Services 라이브러리 로드 실패'));
+                        }
+                    }, 1000);
                 }
-
-                attempts++;
-                if (attempts >= maxAttempts) {
-                    reject(new AppError('카카오맵 SDK 로드 타임아웃'));
-                    return;
-                }
-
-                setTimeout(checkKakao, 100);
             };
 
-            checkKakao();
+            window.addEventListener('kakaoMapsReady', handleKakaoReady);
+
+            // 타임아웃 설정 (10초)
+            setTimeout(() => {
+                window.removeEventListener('kakaoMapsReady', handleKakaoReady);
+                reject(new AppError('카카오맵 SDK 로드 타임아웃 (10초)'));
+            }, 10000);
         });
     }
 

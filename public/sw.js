@@ -29,6 +29,21 @@ self.addEventListener('install', (/** @type {ExtendableEvent} */ event) => {
 
 // Fetch event
 self.addEventListener('fetch', (/** @type {FetchEvent} */ event) => {
+    // 외부 API 요청은 캐싱하지 않고 직접 fetch
+    const url = new URL(event.request.url);
+
+    // 카카오맵 API, CDN, 외부 리소스는 직접 fetch
+    if (
+        url.hostname.includes('kakao.com') ||
+        url.hostname.includes('daumcdn.net') ||
+        url.hostname.includes('cloudflare.com') ||
+        url.hostname !== self.location.hostname
+    ) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+
+    // 자체 리소스만 캐싱 처리
     event.respondWith(
         caches
             .match(event.request)

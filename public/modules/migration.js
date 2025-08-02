@@ -15,15 +15,31 @@ export class CacheMigration {
         try {
             Utils.log(`캐시 마이그레이션 시작 (${this.migrationVersion})...`);
 
+            // 디버깅을 위한 강제 재실행 체크
+            const forceReMigration = localStorage.getItem('force_remigration') === 'true';
+            if (forceReMigration) {
+                Utils.log('강제 재마이그레이션 모드 활성화');
+                localStorage.removeItem('cache_migration_info');
+                localStorage.removeItem('force_remigration');
+            }
+
             // 마이그레이션 이미 완료되었는지 확인
-            if (await this.isMigrationCompleted()) {
+            if (!forceReMigration && (await this.isMigrationCompleted())) {
                 Utils.log('마이그레이션이 이미 완료되었습니다.');
                 return true;
             }
 
             // 기존 데이터베이스 확인 및 데이터 읽기
+            Utils.log('기존 데이터베이스 확인 중...');
             const oldData = await this.readOldDataSafely();
-            if (!oldData || oldData.stores.length === 0) {
+
+            if (!oldData) {
+                Utils.log('기존 데이터베이스를 찾을 수 없습니다.');
+                await this.markMigrationCompleted();
+                return false;
+            }
+
+            if (!oldData.stores || oldData.stores.length === 0) {
                 Utils.log('마이그레이션할 데이터가 없습니다.');
                 await this.markMigrationCompleted();
                 return false;
@@ -31,8 +47,18 @@ export class CacheMigration {
 
             Utils.log(`마이그레이션할 데이터: ${oldData.stores.length}개`);
 
+            // 첫 번째 데이터 샘플 로깅
+            if (oldData.stores.length > 0) {
+                Utils.log('첫 번째 데이터 샘플:', JSON.stringify(oldData.stores[0], null, 2));
+            }
+
             // 새 형식으로 변환
             const migrationData = this.transformData(oldData);
+
+            if (migrationData.stores.length === 0) {
+                Utils.log('변환된 데이터가 없습니다. 데이터 형식을 확인해주세요.');
+                return false;
+            }
 
             // 새 데이터베이스에 저장
             const result = await this.saveToNewDB(migrationData);
@@ -203,10 +229,12 @@ export class CacheMigration {
 
                 const 행정동 = store.행정동 || store.읍면동명 || store.dong || '';
                 const 상호 = store.상호 || store.storeName || store.name || '';
+                const 상세주소 = store.상세주소 || store.address || '';
 
-                if (!행정동 || !상호) {
+                // 행정동은 필수, 상호나 주소 중 하나는 있어야 함 (개선된 조건)
+                if (!행정동 || (!상호 && !상세주소)) {
                     Utils.warn(
-                        `인덱스 ${index}: 필수 필드 누락 (행정동: ${행정동}, 상호: ${상호})`
+                        `인덱스 ${index}: 필수 필드 누락 (행정동: ${행정동}, 상호: ${상호}, 주소: ${상세주소})`
                     );
                     return;
                 }
@@ -215,8 +243,8 @@ export class CacheMigration {
                 const storeData = {
                     id: index,
                     행정동: 행정동,
-                    상호: 상호,
-                    상세주소: store.상세주소 || store.address || '',
+                    상호: 상호 || `미상-${index}`, // 빈 상호는 기본값 제공
+                    상세주소: 상세주소,
                     원본데이터: store.원본데이터 || store,
                     인덱스: store.인덱스 || index,
                     검색결과: store.검색결과 || 'Unknown',
@@ -232,7 +260,7 @@ export class CacheMigration {
 
                 // 위치 정보가 있는 경우만 locations에 추가
                 if (this.hasValidCoordinates(store)) {
-                    const key = `${행정동}_${상호}`;
+                    const key = `${행정동}_${storeData.상호}`;
                     const coords = this.extractCoordinates(store.coords);
 
                     if (coords) {

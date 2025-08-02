@@ -41,10 +41,36 @@
             // 전역 변수로 설정
             window.KAKAO_API_KEY = apiKey;
 
-            // 동적으로 스크립트 태그 생성
+            // 동적으로 스크립트 태그 생성 (개선된 로딩)
             const script = document.createElement('script');
             script.type = 'text/javascript';
-            script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services,clusterer`;
+            script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services,clusterer&autoload=false`;
+
+            // 로딩 완료 처리
+            script.onload = function () {
+                console.log('✅ 카카오맵 SDK 스크립트 로드 완료');
+                // 수동으로 SDK 초기화
+                if (window.kakao && window.kakao.maps) {
+                    window.kakao.maps.load(function () {
+                        console.log('✅ 카카오맵 SDK 초기화 완료');
+                        console.log('Maps API 사용 가능:', !!window.kakao.maps);
+                        console.log('Services 라이브러리 사용 가능:', !!window.kakao.maps.services);
+                        console.log(
+                            'Clusterer 라이브러리 사용 가능:',
+                            !!window.kakao.maps.Clusterer
+                        );
+
+                        // 앱 초기화 이벤트 발생
+                        window.dispatchEvent(new CustomEvent('kakaoMapsReady'));
+                    });
+                }
+            };
+
+            script.onerror = function (error) {
+                console.error('❌ 카카오맵 SDK 로드 실패:', error);
+                console.error('API 키 확인:', apiKey.substring(0, 8) + '...');
+            };
+
             document.head.appendChild(script);
         </script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
