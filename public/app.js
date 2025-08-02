@@ -288,13 +288,34 @@ class App {
                         검색결과: store.검색결과 || ''
                     };
 
-                    // 캐시된 위치 정보 적용 - 정확한 키 매칭
+                    // 캐시된 위치 정보 적용 - 개선된 키 매칭
                     let cachedLocation = null;
-                    const primaryKey = `${processedStore.행정동 || processedStore.읍면동명}_${processedStore.상호}`;
+                    const dong = processedStore.행정동 || processedStore.읍면동명;
+                    const storeName = processedStore.상호;
 
-                    if (cachedLocations.has(primaryKey)) {
-                        cachedLocation = cachedLocations.get(primaryKey);
-                        console.log(`캐시 매칭 성공: ${primaryKey} -> ${processedStore.상호}`);
+                    // 여러 가지 키 패턴으로 시도
+                    const possibleKeys = [
+                        `${dong}_${storeName}`,
+                        `${processedStore.행정동}_${storeName}`,
+                        `${processedStore.읍면동명}_${storeName}`
+                    ].filter((key) => key && !key.startsWith('_') && !key.endsWith('_'));
+
+                    for (const key of possibleKeys) {
+                        if (cachedLocations.has(key)) {
+                            cachedLocation = cachedLocations.get(key);
+                            console.log(`✅ 캐시 매칭 성공: ${key} -> ${storeName}`);
+                            break;
+                        }
+                    }
+
+                    // 매칭 실패 시 디버깅
+                    if (!cachedLocation && index < 5) {
+                        console.log(`❌ 캐시 매칭 실패 (샘플):`, {
+                            dong,
+                            storeName,
+                            possibleKeys,
+                            availableKeys: [...cachedLocations.keys()].slice(0, 3)
+                        });
                     }
 
                     if (cachedLocation) {
