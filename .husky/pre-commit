@@ -15,7 +15,8 @@ pnpm run format
 echo "🔍 Type checking..."
 pnpm run type-check
 
-# 변경사항을 스테이징에 추가 (lint와 format에서 수정된 파일들)
-git add .
+# lint와 format에서 수정된 staged 파일들만 다시 추가
+# (unstaged 파일은 추가하지 않음)
+git diff --cached --name-only | xargs -r git add
 
 echo "✅ Pre-commit checks completed successfully!"
