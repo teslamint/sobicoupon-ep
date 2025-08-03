@@ -51,6 +51,28 @@ export class StorageManager {
         }
     }
 
+    // 마이그레이션 완료 대기 (레이스 컨디션 방지)
+    async waitForMigrationComplete(timeoutMs = 3000) {
+        const startTime = Date.now();
+
+        while (!this.migrationCompleted && Date.now() - startTime < timeoutMs) {
+            // 마이그레이션이 완료되지 않았다면 잠시 대기
+            await new Promise((resolve) => setTimeout(resolve, 100));
+
+            // 데이터베이스가 초기화되었다면 migrated_stores 존재 여부 확인
+            if (this.db && this.db.objectStoreNames.contains('migrated_stores')) {
+                this.migrationCompleted = true;
+                break;
+            }
+        }
+
+        if (!this.migrationCompleted) {
+            Utils.warn('마이그레이션 완료 대기 시간 초과 (3초)');
+        }
+
+        return this.migrationCompleted;
+    }
+
     // 데이터베이스 열기
     openDatabase() {
         return new Promise((resolve, reject) => {

@@ -111,11 +111,15 @@ export class MapManager {
     // 초기화
     init(containerId) {
         if (this.isInitialized) {
+            console.log('⚠️ 지도가 이미 초기화되어 있습니다.');
             return;
         }
 
+        console.log('🚀 지도 초기화 시작:', containerId);
+
         try {
-            // API 키 확인
+            // 1단계: API 키 확인
+            console.log('1️⃣ API 키 확인 중...');
             const apiKey = config.getKakaoApiKey();
             if (!apiKey) {
                 throw new AppError(
@@ -123,20 +127,32 @@ export class MapManager {
                     ErrorCodes.API_KEY_MISSING
                 );
             }
+            console.log('✅ API 키 확인 완료');
 
-            // 카카오맵 로드 확인
+            // 2단계: 카카오맵 로드 확인
+            console.log('2️⃣ 카카오맵 API 로드 상태 확인 중...');
+            console.log('window.kakao 존재:', !!window.kakao);
+            console.log('window.kakao.maps 존재:', !!window.kakao?.maps);
+            console.log('window.kakao.maps.Map 존재:', !!window.kakao?.maps?.Map);
+
             if (!window.kakao || !window.kakao.maps) {
                 throw new AppError(
                     '카카오맵 API가 로드되지 않았습니다.',
                     ErrorCodes.MAP_INIT_ERROR
                 );
             }
+            console.log('✅ 카카오맵 API 로드 확인 완료');
 
+            // 3단계: 컨테이너 확인
+            console.log('3️⃣ 지도 컨테이너 확인 중...', containerId);
             const container = document.getElementById(containerId);
             if (!container) {
                 throw new Error('지도 컨테이너를 찾을 수 없습니다.');
             }
+            console.log('✅ 지도 컨테이너 확인 완료:', container);
 
+            // 4단계: 지도 옵션 설정
+            console.log('4️⃣ 지도 옵션 설정 중...');
             const options = {
                 center: new kakao.maps.LatLng(
                     CONSTANTS.MAP.DEFAULT_CENTER.lat,
@@ -144,10 +160,15 @@ export class MapManager {
                 ),
                 level: CONSTANTS.MAP.DEFAULT_ZOOM
             };
+            console.log('✅ 지도 옵션 설정 완료:', options);
 
+            // 5단계: 카카오맵 인스턴스 생성
+            console.log('5️⃣ 카카오맵 인스턴스 생성 중...');
             this.map = new kakao.maps.Map(container, options);
+            console.log('✅ 카카오맵 인스턴스 생성 완료');
 
-            // Services 라이브러리 우회 처리
+            // 6단계: Services 라이브러리 확인
+            console.log('6️⃣ Services 라이브러리 확인 중...');
             if (window.kakao?.maps?.services?.Places) {
                 this.ps = new kakao.maps.services.Places();
                 console.log('✅ Places 서비스 초기화 완료');
@@ -156,20 +177,31 @@ export class MapManager {
                 this.ps = null;
             }
 
+            // 7단계: InfoWindow 생성
+            console.log('7️⃣ InfoWindow 생성 중...');
             this.infowindow = new kakao.maps.InfoWindow({ zIndex: 10 });
+            console.log('✅ InfoWindow 생성 완료');
 
-            // 클러스터러 초기화
+            // 8단계: 클러스터러 초기화
+            console.log('8️⃣ 클러스터러 초기화 중...');
             this.initClusterer();
+            console.log('✅ 클러스터러 초기화 완료');
 
-            // 이벤트 리스너 설정
+            // 9단계: 이벤트 리스너 설정
+            console.log('9️⃣ 이벤트 리스너 설정 중...');
             this.setupEventListeners();
+            console.log('✅ 이벤트 리스너 설정 완료');
 
-            // 상태 저장
+            // 10단계: 상태 저장
+            console.log('🔟 상태 저장 중...');
             stateManager.setState({
                 mapCenter: this.map.getCenter(),
                 mapLevel: this.map.getLevel()
             });
+            console.log('✅ 상태 저장 완료');
 
+            // 11단계: 최종 설정
+            console.log('🏁 최종 설정 중...');
             this.isInitialized = true;
             container.style.display = 'block';
 
@@ -180,9 +212,25 @@ export class MapManager {
             this.cleanupInterval = setInterval(() => {
                 this.cleanupOldEventListeners();
             }, CONSTANTS.TIME.CIRCUIT_BREAKER_TIMEOUT);
+
+            console.log('🎉 지도 초기화 성공 완료!');
         } catch (error) {
+            console.error('❌ 지도 초기화 중 오류 발생:', error);
+            console.error('오류 스택:', error.stack);
+            console.error('오류 타입:', error.constructor.name);
+            console.error('오류 메시지:', error.message);
+
             throw new AppError('지도 초기화 실패', ErrorCodes.MAP_INIT_ERROR, {
-                originalError: error
+                originalError: error,
+                step: '지도 초기화 과정에서 오류 발생',
+                details: {
+                    errorType: error.constructor.name,
+                    errorMessage: error.message,
+                    kakaoLoaded: !!window.kakao,
+                    mapsLoaded: !!window.kakao?.maps,
+                    containerId: containerId,
+                    containerExists: !!document.getElementById(containerId)
+                }
             });
         }
     }

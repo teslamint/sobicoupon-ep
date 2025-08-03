@@ -249,6 +249,10 @@ class App {
         try {
             console.log('캐시 데이터 로드 시작...');
 
+            // 마이그레이션 완료 대기 (레이스 컨디션 방지)
+            console.log('마이그레이션 완료 대기 중...');
+            await storageManager.waitForMigrationComplete(3000);
+
             // 마이그레이션된 데이터 로드 시도
             const migratedStores = await storageManager.getMigratedStores();
 
@@ -383,14 +387,34 @@ class App {
             uiManager.updateFilterOptions(dongs, categories);
             uiManager.updateStats(stats);
 
-            // 지도 초기화 및 마커 표시
+            // 지도 초기화 및 마커 표시 - 카카오맵 라이브러리 로드 완료 후 실행
             if (!mapManager.isInitialized) {
-                setTimeout(async () => {
-                    await mapManager.init('map');
-                    if (foundCount > 0) {
-                        mapManager.showAllMarkers();
-                    }
-                }, 100);
+                // kakaoMapsReady 이벤트를 기다린 후 지도 초기화
+                const initializeMapWithMarkers = () => {
+                    setTimeout(async () => {
+                        try {
+                            await mapManager.init('map');
+                            if (foundCount > 0) {
+                                mapManager.showAllMarkers();
+                            }
+                        } catch (error) {
+                            console.error('지도 초기화 지연 실행 실패:', error);
+                        }
+                    }, 100);
+                };
+
+                // 카카오맵이 이미 로드되었는지 확인
+                if (window.kakao && window.kakao.maps) {
+                    initializeMapWithMarkers();
+                } else {
+                    // kakaoMapsReady 이벤트 리스너 등록
+                    const handleKakaoReady = () => {
+                        console.log('📢 지연된 지도 초기화 시작');
+                        initializeMapWithMarkers();
+                        window.removeEventListener('kakaoMapsReady', handleKakaoReady);
+                    };
+                    window.addEventListener('kakaoMapsReady', handleKakaoReady);
+                }
             } else {
                 mapManager.relayout();
                 if (foundCount > 0) {

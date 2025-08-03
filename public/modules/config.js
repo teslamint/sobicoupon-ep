@@ -61,6 +61,11 @@ export class Config {
             const obfuscatedKey =
                 window.KAKAO_API_KEY_OBFUSCATED || this.getFromMeta('kakao-api-key-obfuscated');
             kakaoKey = deobfuscateKey(obfuscatedKey);
+
+            // 난독화된 키가 없으면 평문 키 시도 (Cloudflare Workers 환경)
+            if (!kakaoKey) {
+                kakaoKey = window.KAKAO_API_KEY || this.getFromMeta('kakao-api-key');
+            }
         }
 
         return {
