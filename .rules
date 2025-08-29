@@ -1,0 +1,110 @@
+# sobicoupon Agent Rules (.rules)
+
+This file is the single source of truth for AI coding agents working on this repository. `AGENTS.md` and `CLAUDE.md` are symlinks to this file.
+
+## Project Context
+
+- Name: 은평구 소비쿠폰 가맹점 위치 검색 시스템
+- Purpose: Real‑time store search and map visualization using Kakao Maps.
+- Tech Stack: ES6 modules (frontend), Cloudflare Workers (backend/serverless), Kakao Maps/Places API, IndexedDB (client cache), XLSX parsing, Jest (+ jsdom), Playwright.
+- Key Features: Excel upload + parse, live search/filter, marker clustering, responsive UI, offline cache.
+
+## General Working Principles
+
+- Minimal, focused changes: Fix root causes without unrelated edits. Keep diffs small and readable.
+- Match existing style: Follow Prettier/ESLint rules; do not add new tooling.
+- Validate when feasible: Prefer targeted tests for changed areas; use `npm test` and `npm run lint:check`/`npm run format:check`.
+- No secrets in code: Use env/`wrangler` for keys; never print or leak API keys.
+- Performance + UX: Avoid regressions in load time, memory, and map interactivity.
+- Clear handoffs: Summarize intent, changes, and next steps succinctly.
+
+## Repository Conventions
+
+- Source layout: Browser code lives under `public/` (built via `build.js` -> `dist/`). Types live under `types/` and `types.d.ts`.
+- Scripts:
+  - Build: `npm run build`
+  - Dev: `npm run dev` (Cloudflare wrangler)
+  - Tests: `npm test`, coverage: `npm run test:coverage`
+  - Lint: `npm run lint:check`, Format check: `npm run format:check`
+- Maps: Use Kakao Maps API; cluster markers efficiently; keep interactions smooth on mobile.
+- Data: Parse Excel (XLSX.js). Cache normalized data in IndexedDB; implement sane cache invalidation.
+
+## Team Roles (for routing work)
+
+- `@frontend-developer`: ES6 modules, responsive UI/UX, bundling, browser compatibility.
+- `@frontend-developer` (maps): Kakao Maps integration, marker clustering, zoom‑level rendering, geolocation.
+- `@backend-developer`: Cloudflare Workers, API perf, caching, security.
+- `@backend-developer` (data): Excel parsing, IndexedDB strategy, search algorithms, batch ops.
+- `@code-reviewer`: Code quality, security checks, perf bottlenecks, best practices.
+- `@performance-optimizer`: Load time, memory, network, UX responsiveness.
+
+Typical tasks (examples):
+- UI: “검색 인터페이스를 더 직관적으로”, “모바일 터치 이벤트 최적화”, “로딩 상태 UI 개선”.
+- Maps: “클러스터링 성능 최적화”, “줌 레벨별 마커 로직”, “현재 위치 검색”.
+- Backend: “Workers 응답 최적화”, “API 키 보안 강화”, “에러 처리 개선”.
+- Data: “대용량 엑셀 처리”, “검색 알고리즘 최적화”, “캐시 무효화”.
+- Quality: “코드 리뷰”, “보안 취약점 검사”, “성능 개선점 분석”.
+
+## Preferred Workflows
+
+- New feature:
+  1) Design UI with `@frontend-developer`
+  2) Implement data/Worker logic with `@backend-developer`
+  3) Validate via `@code-reviewer`
+  4) Optimize with `@performance-optimizer`
+
+- Bug fix:
+  1) Root‑cause analysis by `@code-reviewer`
+  2) Targeted fix by domain expert
+  3) Re‑review + tests
+
+- Perf improvement:
+  1) Bottleneck analysis by `@performance-optimizer`
+  2) Focused optimizations
+  3) Measure + verify
+
+## Agent‑Specific Guidance
+
+### Codex (CLI) Agents
+
+- Planning: Use a short plan for multi‑step tasks; update statuses as you proceed.
+- Preambles: Before running grouped commands, briefly state what you’ll do next.
+- Edits: Use `apply_patch` for file changes; keep patches minimal and scoped.
+- Shell usage: Prefer `rg` for searches; read files in ≤250‑line chunks.
+- Approvals/sandbox: Ask for elevation if a command needs network or writes outside workspace.
+- Validation: Run targeted tests and lints where helpful; avoid unrelated fixes.
+- Output style: Be concise and action‑oriented; summarize changes and next steps. Use backticks for paths/commands.
+
+### Claude Code Agents
+
+- Scoping: Propose minimal, well‑scoped diffs; avoid sweeping refactors without consensus.
+- Assumptions: State assumptions crisply; ask for missing context before risky changes.
+- Patches: Share unified diffs or file snippets rather than entire files when possible.
+- Consistency: Follow existing patterns; align with ESLint/Prettier; keep naming coherent.
+- Safety: Call out destructive actions; suggest backups/tests; respect secrets handling.
+- Validation: Recommend `npm test`, `npm run lint:check`, `npm run format:check` before/after changes.
+- Communication: Provide short, structured summaries with rationale and expected effects.
+
+## Security & Privacy
+
+- Never hardcode or log secrets (API keys, tokens). Use environment variables or Wrangler secrets.
+- Validate and sanitize user inputs (especially from file uploads and map queries).
+- Be mindful of CORS, rate limiting, and error handling to avoid information leaks.
+
+## Performance Guidelines
+
+- Maps: Use clustering and viewport culling; throttle high‑frequency events; avoid re‑creating map objects.
+- Data: Stream/parse efficiently; debounce search; index data for quick lookups.
+- Build: Keep bundles lean; code‑split when helpful; verify with coverage and size diffs.
+
+## Ready‑To‑Run Checks
+
+- Lint/format: `npm run lint:check && npm run format:check`
+- Unit tests: `npm test` or `npm run test:coverage`
+- E2E (optional): `npm run test:e2e`
+- Build: `npm run build`
+
+## Source Attribution
+
+This `.rules` content is derived from and supersedes guidance in the former `CLAUDE.md`, adapted to be applicable to both Codex and Claude Code agents. Keep this file updated when project conventions change.
+
