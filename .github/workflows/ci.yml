@@ -87,7 +87,7 @@ jobs:
 
     strategy:
       matrix:
-        browser: [chromium, firefox, webkit]
+        browser: [ chromium, firefox, webkit ]
 
     steps:
       - name: Checkout code
@@ -125,7 +125,7 @@ jobs:
           nohup http-server -p 8787 -c-1 --cors > server.log 2>&1 &
           SERVER_PID=$!
           echo "서버 PID: $SERVER_PID"
-          
+
           # 서버가 완전히 시작될 때까지 기다리기
           for i in {1..30}; do
             if curl -f http://localhost:8787/ > /dev/null 2>&1; then
@@ -135,14 +135,14 @@ jobs:
             echo "서버 시작 대기 중... (시도 $i/30)"
             sleep 2
           done
-          
+
           # 최종 상태 확인
           if ! curl -f http://localhost:8787/ > /dev/null 2>&1; then
             echo "서버 시작 실패!"
             cat server.log
             exit 1
           fi
-          
+
           echo "서버 응답 테스트:"
           curl -I http://localhost:8787/
         env:
@@ -179,7 +179,7 @@ jobs:
 
     strategy:
       matrix:
-        device: ['Mobile Chrome', 'Mobile Safari']
+        device: [ 'Mobile Chrome', 'Mobile Safari' ]
 
     steps:
       - name: Checkout code
@@ -217,7 +217,7 @@ jobs:
           nohup http-server -p 8787 -c-1 --cors > server.log 2>&1 &
           SERVER_PID=$!
           echo "서버 PID: $SERVER_PID"
-          
+
           # 서버가 완전히 시작될 때까지 기다리기
           for i in {1..30}; do
             if curl -f http://localhost:8787/ > /dev/null 2>&1; then
@@ -227,14 +227,14 @@ jobs:
             echo "서버 시작 대기 중... (시도 $i/30)"
             sleep 2
           done
-          
+
           # 최종 상태 확인
           if ! curl -f http://localhost:8787/ > /dev/null 2>&1; then
             echo "서버 시작 실패!"
             cat server.log
             exit 1
           fi
-          
+
           echo "서버 응답 테스트:"
           curl -I http://localhost:8787/
         env:
@@ -259,7 +259,7 @@ jobs:
   build:
     name: Build Test
     runs-on: ubuntu-latest
-    needs: [unit-tests, e2e-tests]
+    needs: [ unit-tests, e2e-tests ]
 
     steps:
       - name: Checkout code
@@ -336,7 +336,7 @@ jobs:
     name: Deployment Ready
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    needs: [unit-tests, e2e-tests, mobile-e2e-tests, build, security]
+    needs: [ unit-tests, e2e-tests, mobile-e2e-tests, build, security ]
 
     steps:
       - name: Checkout code
@@ -347,6 +347,22 @@ jobs:
           echo "✅ 모든 테스트와 검사가 성공적으로 완료되었습니다!"
           echo "🚀 배포 준비가 완료되었습니다."
 
+      - name: Create deployment
+        id: create-deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const res = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: 'production',
+              transient_environment: true,
+              required_contexts: []
+            });
+            // deployment_id를 다음 스텝으로 전달
+            core.setOutput('deployment_id', res.data.id);
+
       - name: Create deployment status
         uses: actions/github-script@v7
         with:
@@ -354,7 +370,7 @@ jobs:
             github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              deployment_id: context.payload.deployment?.id,
+              deployment_id: ${{ steps.create-deployment.outputs.deployment_id }},
               state: 'success',
               description: 'All tests passed - ready for deployment'
             });
