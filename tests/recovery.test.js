@@ -3,7 +3,6 @@
  */
 
 import { RecoveryManager } from '../public/modules/recovery.js';
-import { CONSTANTS } from '../public/modules/constants.js';
 import { Utils } from '../public/modules/utils.js';
 import { AppError, ErrorCodes } from '../public/modules/errors.js';
 
