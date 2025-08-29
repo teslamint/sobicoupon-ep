@@ -1,4 +1,4 @@
-# sobicoupon Agent Rules (.rules)
+# .rules
 
 This file is the single source of truth for AI coding agents working on this repository. `AGENTS.md` and `CLAUDE.md` are symlinks to this file.
 
@@ -32,7 +32,7 @@ This file is the single source of truth for AI coding agents working on this rep
 ## Team Roles (for routing work)
 
 - `@frontend-developer`: ES6 modules, responsive UI/UX, bundling, browser compatibility.
-- `@frontend-developer` (maps): Kakao Maps integration, marker clustering, zoom‑level rendering, geolocation.
+- `@maps-developer`: Kakao Maps integration, marker clustering, zoom‑level rendering, geolocation.
 - `@backend-developer`: Cloudflare Workers, API perf, caching, security.
 - `@backend-developer` (data): Excel parsing, IndexedDB strategy, search algorithms, batch ops.
 - `@code-reviewer`: Code quality, security checks, perf bottlenecks, best practices.
@@ -101,10 +101,9 @@ Typical tasks (examples):
 
 - Lint/format: `npm run lint:check && npm run format:check`
 - Unit tests: `npm test` or `npm run test:coverage`
-- E2E (optional): `npm run test:e2e`
+- E2E (Playwright): `npm run test:e2e` (headed: `npm run test:e2e:headed`)
 - Build: `npm run build`
 
 ## Source Attribution
 
 This `.rules` content is derived from and supersedes guidance in the former `CLAUDE.md`, adapted to be applicable to both Codex and Claude Code agents. Keep this file updated when project conventions change.
-
