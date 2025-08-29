@@ -29,14 +29,16 @@ This file is the single source of truth for AI coding agents working on this rep
 - Maps: Use Kakao Maps API; cluster markers efficiently; keep interactions smooth on mobile.
 - Data: Parse Excel (XLSX.js). Cache normalized data in IndexedDB; implement sane cache invalidation.
 
-## Team Roles (for routing work)
+## Claude Code Agents
 
-- `@frontend-developer`: ES6 modules, responsive UI/UX, bundling, browser compatibility.
-- `@maps-developer`: Kakao Maps integration, marker clustering, zoom‑level rendering, geolocation.
-- `@backend-developer`: Cloudflare Workers, API perf, caching, security.
-- `@backend-developer` (data): Excel parsing, IndexedDB strategy, search algorithms, batch ops.
-- `@code-reviewer`: Code quality, security checks, perf bottlenecks, best practices.
-- `@performance-optimizer`: Load time, memory, network, UX responsiveness.
+Agent mentions must start with `@agent-` and are used in Claude Code to route work to specialized agents:
+
+- `@agent-frontend`: ES6 modules, responsive UI/UX, bundling, browser compatibility.
+- `@agent-maps`: Kakao Maps integration, marker clustering, zoom‑level rendering, geolocation.
+- `@agent-backend`: Cloudflare Workers, API perf, caching, security.
+- `@agent-data`: Excel parsing, IndexedDB strategy, search algorithms, batch ops.
+- `@agent-code-review`: Code quality, security checks, perf bottlenecks, best practices.
+- `@agent-performance`: Load time, memory, network, UX responsiveness.
 
 Typical tasks (examples):
 - UI: “검색 인터페이스를 더 직관적으로”, “모바일 터치 이벤트 최적화”, “로딩 상태 UI 개선”.
@@ -48,18 +50,18 @@ Typical tasks (examples):
 ## Preferred Workflows
 
 - New feature:
-  1) Design UI with `@frontend-developer`
-  2) Implement data/Worker logic with `@backend-developer`
-  3) Validate via `@code-reviewer`
-  4) Optimize with `@performance-optimizer`
+  1) Design UI with `@agent-frontend`
+  2) Implement data/Worker logic with `@agent-backend`
+  3) Validate via `@agent-code-review`
+  4) Optimize with `@agent-performance`
 
 - Bug fix:
-  1) Root‑cause analysis by `@code-reviewer`
+  1) Root‑cause analysis by `@agent-code-review`
   2) Targeted fix by domain expert
   3) Re‑review + tests
 
 - Perf improvement:
-  1) Bottleneck analysis by `@performance-optimizer`
+  1) Bottleneck analysis by `@agent-performance`
   2) Focused optimizations
   3) Measure + verify
 
@@ -84,6 +86,7 @@ Typical tasks (examples):
 - Safety: Call out destructive actions; suggest backups/tests; respect secrets handling.
 - Validation: Recommend `npm test`, `npm run lint:check`, `npm run format:check` before/after changes.
 - Communication: Provide short, structured summaries with rationale and expected effects.
+ - Mentions: Use `@agent-*` names (see "Claude Code Agents" list) to route tasks.
 
 ## Security & Privacy
 
