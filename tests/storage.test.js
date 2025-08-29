@@ -5,7 +5,7 @@
 import { StorageManager, storageManager } from '../public/modules/storage.js';
 import { CONSTANTS } from '../public/modules/constants.js';
 import { Utils } from '../public/modules/utils.js';
-import { AppError, ErrorCodes } from '../public/modules/errors.js';
+import { AppError } from '../public/modules/errors.js';
 import 'fake-indexeddb/auto';
 
 // Polyfill for structuredClone (required by fake-indexeddb)
